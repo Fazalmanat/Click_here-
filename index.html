@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>FIND IT — arcade button hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#120c1e;
+    --panel:#1d1530;
+    --ink:#f5f0ff;
+    --ink-dim:#a89bc4;
+    --pink:#ff2e88;
+    --cyan:#00e5ff;
+    --amber:#ffcc00;
+    --frame-gap: 22px;
+    --disco-bg: var(--bg);
+    --disco-text: var(--pink);
+    --disco-stage: var(--panel);
+
+    --cyan-glow: rgba(0,229,255,.55);
+    --pink-glow: rgba(255,46,136,.55);
+    --card-bg: rgba(255,255,255,.03);
+    --card-border: rgba(255,255,255,.08);
+    --hairline: rgba(255,255,255,.12);
+    --hairline-soft: rgba(255,255,255,.1);
+    --shadow-soft: rgba(0,0,0,.55);
+    --btn-primary-ink:#1a0d16;
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f2fb;
+    --panel:#ffffff;
+    --ink:#241a38;
+    --ink-dim:#6b6180;
+    --card-bg: rgba(20,10,40,.035);
+    --card-border: rgba(20,10,40,.12);
+    --hairline: rgba(20,10,40,.18);
+    --hairline-soft: rgba(20,10,40,.14);
+    --shadow-soft: rgba(20,10,40,.18);
+  }
+  @media (max-width: 640px){
+    :root{ --frame-gap: 10px; }
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select: none; }
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background:var(--bg);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    color:var(--ink);
+  }
+  .arcade{ font-family:'Press Start 2P', monospace; }
+
+  /* ---------- MARQUEE FRAME (signature element) ---------- */
+  #frame{
+    position:fixed; inset:0;
+    padding:var(--frame-gap);
+    background: var(--disco-bg);
+    transition: background .35s ease;
+  }
+  #frame::before{
+    content:""; position:absolute; inset:0;
+    padding:var(--frame-gap);
+    background:
+      repeating-linear-gradient(90deg,
+        var(--disco-text) 0 24px, transparent 24px 48px);
+    background-size: 200% 100%, 100% 200%, 100% 100%, 100% 100%;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: chase 1.4s linear infinite;
+    opacity:.9;
+    pointer-events:none;
+    transition: background .35s ease;
+  }
+  @keyframes chase{ to{ background-position: -48px 0; } }
+
+  #stage{
+    position:relative;
+    height:100%; width:100%;
+    background:var(--disco-stage);
+    border-radius:18px;
+    overflow:hidden;
+    transition: background .35s ease;
+    box-shadow:
+      inset 0 0 0 2px rgba(255,255,255,.06),
+      0 0 60px rgba(0,0,0,.55);
+  }
+
+  .screen{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:6vw;
+    text-align:center;
+  }
+  .screen.active{ display:flex; }
+
+  /* ---------- LOGIN ---------- */
+  .logo{
+    font-size: clamp(22px, 5vw, 40px);
+    color:var(--cyan);
+    text-shadow: 0 0 18px var(--cyan-glow);
+    margin: 0 0 8px;
+    letter-spacing:2px;
+  }
+  .logo span{ color:var(--pink); text-shadow:0 0 18px var(--pink-glow); }
+  .tagline{ color:var(--ink-dim); margin:0 0 34px; font-size:clamp(12px,2.4vw,15px); }
+
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    padding:32px 28px;
+    width:min(90vw, 380px);
+  }
+
+  input#playerName{
+    width:100%;
+    padding:14px 16px;
+    font-size:16px;
+    font-family:'Space Grotesk', sans-serif;
+    background:var(--bg);
+    border:2px solid var(--hairline);
+    border-radius:10px;
+    color:var(--ink);
+    outline:none;
+    margin-bottom:18px;
+  }
+  input#playerName:focus{ border-color:var(--cyan); }
+
+  button{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+    outline:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  .btn-primary{
+    width:100%;
+    padding:14px 16px;
+    font-size:15px;
+    border-radius:10px;
+    background:var(--pink);
+    color:var(--btn-primary-ink);
+    box-shadow:0 6px 0 #a8155a, 0 8px 18px var(--pink-glow);
+    transition:transform .08s ease;
+  }
+  .btn-primary:active{ transform:translateY(6px); box-shadow:0 0 0 #a8155a; }
+
+  /* ---------- THEME TOGGLE ---------- */
+  #themeToggle{
+    position:fixed;
+    top: calc(var(--frame-gap) + 14px);
+    right: calc(var(--frame-gap) + 14px);
+    z-index:10;
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    color:var(--ink);
+    font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  body.in-game #themeToggle{ display:none; }
+
+  /* ---------- MODE SELECT ---------- */
+  .mode-title{ font-size:clamp(16px,3vw,20px); color:var(--ink-dim); margin-bottom:22px; }
+  .best-line{ font-size:12px; color:var(--ink-dim); letter-spacing:1px; margin:-14px 0 22px; }
+  .new-high{
+    font-size:12px; letter-spacing:2px; color:var(--amber);
+    margin:0 0 6px; animation:pulse .6s infinite;
+  }
+  .modes{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center; max-width:640px; }
+  .mode-card{
+    width:230px; max-width:80vw;
+    background:var(--card-bg);
+    border:2px solid var(--hairline);
+    border-radius:16px;
+    padding:26px 20px;
+    text-align:left;
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  .mode-card:hover, .mode-card:active{
+    border-color:var(--cyan);
+    transform:translateY(-4px);
+    background:var(--cyan-glow);
+  }
+  .mode-card h3{ margin:10px 0 6px; font-size:18px; color:var(--ink); }
+  .mode-card p{ margin:0; font-size:13px; color:var(--ink-dim); line-height:1.5; }
+  .mode-icon{ font-size:28px; }
+  .mode-card.zen:hover, .mode-card.zen:active{ border-color:var(--amber); background:rgba(184,134,11,.12); }
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding: clamp(10px,2vw,20px) clamp(14px,3vw,26px);
+    z-index:5;
+    pointer-events:none;
+  }
+  .hud-block{ text-align:left; }
+  .hud-label{ font-size:10px; letter-spacing:2px; color:var(--ink-dim); margin:0 0 4px; }
+  .hud-value{ font-size:clamp(20px,5vw,30px); margin:0; color:var(--ink); }
+  #scoreValue{ color:var(--disco-text); transition: color .15s ease; }
+  #timerValue.warn{ color:var(--pink); animation:pulse .5s infinite; }
+  @keyframes pulse{ 50%{ opacity:.35; } }
+
+  #quitBtn{
+    pointer-events:all;
+    background:transparent;
+    color:var(--ink-dim);
+    border:1px solid var(--hairline-soft);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:9px;
+    letter-spacing:1px;
+  }
+  #quitBtn:active{ border-color:var(--pink); color:var(--pink); }
+
+  /* ---------- TARGET BUTTON ---------- */
+  #target{
+    position:absolute;
+    color:var(--disco-text);
+    background:transparent;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:400;
+    font-size: clamp(7px, 1vw, 9px);
+    line-height:1;
+    padding:1px 3px;
+    transition: color .15s ease;
+    cursor:default;
+  }
+  #target:active{ transform:scale(.92); }
+
+  .decoy{
+    position:absolute;
+    color:var(--disco-text);
+    background:transparent;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:400;
+    font-size: clamp(7px, 1vw, 9px);
+    line-height:1;
+    padding:1px 3px;
+    opacity:.85;
+    cursor: default;
+  }
+  .decoy:active{ transform:scale(.92); }
+
+  /* ---------- GAME OVER ---------- */
+  .final-score{
+    font-size:clamp(48px,12vw,84px);
+    color:var(--disco-text);
+    margin: 6px 0 2px;
+  }
+  .final-label{ color:var(--ink-dim); font-size:13px; letter-spacing:2px; margin-bottom:26px; }
+  .btn-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .btn-secondary{
+    padding:12px 20px; border-radius:10px; font-size:13px;
+    background:transparent; color:var(--ink); border:2px solid var(--hairline-soft);
+  }
+
+  #bestLine{ margin:4px 0 26px; }
+
+  .lb-columns{
+    display:flex; gap:24px; justify-content:center; flex-wrap:wrap;
+    max-height:44vh; overflow-y:auto;
+    width:min(90vw, 460px);
+  }
+  .lb-col{ flex:1; min-width:140px; text-align:left; }
+  .lb-col h4{
+    margin:0 0 10px; font-size:12px; letter-spacing:2px;
+    color:var(--ink-dim); text-transform:uppercase;
+  }
+  .lb-col ol{
+    list-style:decimal; margin:0; padding-left:20px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .lb-col li{ font-size:13px; color:var(--ink); }
+  .lb-col li.lb-empty{ color:var(--ink-dim); list-style:none; margin-left:-20px; }
+  .lb-col li.lb-me{
+    color:var(--amber);
+    font-weight:600;
+  }
+  .lb-col li.lb-me::marker{ color:var(--amber); }
+
+  .hidden{ display:none !important; }
+</style>
+</head>
+<body>
+
+<button id="themeToggle" aria-label="Toggle light and dark mode">🌙</button>
+
+<div id="frame">
+  <div id="stage">
+
+    <!-- LOGIN -->
+    <section class="screen active" id="screen-login">
+      <h1 class="logo arcade">CLICK <span>"here!"</span></h1>
+      <p class="tagline">a button is hiding somewhere on screen. catch it.</p>
+      <div class="card">
+        <input id="playerName" type="text" placeholder="enter your name" maxlength="16" autocomplete="off">
+        <input id="playerPassword" type="password" placeholder="password (min 6 chars)" maxlength="64" autocomplete="off" style="width:100%; padding:14px 16px; font-size:16px; font-family:'Space Grotesk', sans-serif; background:var(--bg); border:2px solid var(--hairline); border-radius:10px; color:var(--ink); outline:none; margin-bottom:18px;">
+        <p id="nameStatus" style="font-size:12px; margin:-12px 0 14px; min-height:14px; color:var(--pink);"></p>
+        <button class="btn-primary arcade" style="font-size:12px;" id="loginBtn">PLAY →</button>
+      </div>
+    </section>
+
+    <!-- MODE SELECT -->
+    <section class="screen" id="screen-mode">
+      <p class="mode-title">welcome, <span id="welcomeName" style="color:var(--cyan)"></span> — pick a mode</p>
+      <p class="best-line" id="bestScores"></p>
+      <div class="modes">
+        <div class="mode-card timer" id="pickTimer">
+          <div class="mode-icon">⏱️</div>
+          <h3>Timer Mode</h3>
+          <p>5 seconds to catch each button before it's gone. How many rounds can you survive?</p>
+        </div>
+        <div class="mode-card zen" id="pickZen">
+          <div class="mode-icon">🌙</div>
+          <h3>Zen Mode</h3>
+          <p>No clock, no pressure. Click at your own pace and watch the colors drift.</p>
+        </div>
+      </div>
+      <button class="btn-secondary" id="viewLeaderboardBtn" style="margin-top:22px; font-size:11px;">🏆 Leaderboard</button>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="screen" id="screen-leaderboard">
+      <p class="mode-title arcade" style="font-size:14px;">LEADERBOARD</p>
+      <div class="lb-columns">
+        <div class="lb-col">
+          <h4>Timer</h4>
+          <ol id="lbTimerList"></ol>
+        </div>
+        <div class="lb-col">
+          <h4>Zen</h4>
+          <ol id="lbZenList"></ol>
+        </div>
+      </div>
+      <p class="best-line" id="lbNote" style="margin-top:16px;">shared across everyone playing this game</p>
+      <button class="btn-secondary" id="lbBackBtn">Back to modes</button>
+    </section>
+
+    <!-- GAME -->
+    <section class="screen" id="screen-game">
+      <div id="hud">
+        <div class="hud-block">
+          <p class="hud-label">SCORE</p>
+          <p class="hud-value arcade" id="scoreValue">0</p>
+        </div>
+        <div class="hud-block" id="timerBlock">
+          <p class="hud-label">TIME</p>
+          <p class="hud-value arcade" id="timerValue">10.0</p>
+        </div>
+        <button id="quitBtn" class="arcade">GIVE UP</button>
+      </div>
+      <button id="target">Here!</button>
+    </section>
+
+    <!-- GAME OVER (timer mode) -->
+    <section class="screen" id="screen-over">
+      <p class="final-label arcade" style="font-size:11px;" id="overLabel">TIME'S UP</p>
+      <p class="new-high hidden" id="newHighBadge">★ NEW HIGH SCORE ★</p>
+      <p class="final-score arcade" id="finalScore">0</p>
+      <p class="final-label">rounds cleared</p>
+      <p class="best-line" id="bestLine"></p>
+      <div class="btn-row">
+        <button class="btn-primary arcade" style="font-size:11px; width:auto; padding:14px 22px;" id="retryBtn">RETRY</button>
+        <button class="btn-secondary" id="menuBtn">Back to modes</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     SUPABASE SETUP (using Supabase Auth)
+     1. Create a project at https://supabase.com/dashboard
+
+     2. Authentication > Providers > Email > turn OFF "Confirm email".
+        This game signs people up with a made-up address built from
+        their username (there's no real inbox behind it), so email
+        confirmation links would never arrive — this has to be off.
+
+     3. SQL Editor > run this. It creates a public profile row for each
+        auth user, holding their display name and best scores. Row
+        Level Security means a player can only ever insert/update their
+        own row — Supabase Auth handles all password hashing/checking
+        internally, so none of that lives in this app's code anymore:
+
+        create table profiles (
+          id uuid primary key references auth.users(id) on delete cascade,
+          display_name text not null,
+          timer_best int not null default 0,
+          zen_best int not null default 0,
+          updated_at timestamptz not null default now()
+        );
+
+        alter table profiles enable row level security;
+        create policy "public read"    on profiles for select using (true);
+        create policy "insert own row" on profiles for insert with check (auth.uid() = id);
+        create policy "update own row" on profiles for update using (auth.uid() = id);
+
+        Uniqueness comes for free: Supabase Auth already enforces one
+        account per email, and each account maps to exactly one
+        username via the fake address below — so two people can't
+        register the same username.
+
+     4. Project settings > API > copy the "Project URL" and "anon public"
+        key into the placeholders below.
+     ============================================================ -->
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  var SUPABASE_URL = "https://noudibszgylmzoynqfqd.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdWRpYnN6Z3lsbXpveW5xZnFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMzIxOTksImV4cCI6MjEwMDcwODE5OX0.I1O0G4R383N5PbmLjf9gh-gr-UVFVGIvKiG9xJCyF9g";
+
+  var supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // Supabase Auth wants an email — we synthesize one from the username so
+  // the login screen can stay "name + password" with no email field.
+  function emailFor(username){
+    return username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '_') + '@players.local';
+  }
+
+  async function loadProfile(userId){
+    var res = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if(res.error){ console.error('profile load failed', res.error); return null; }
+    return res.data;
+  }
+
+  // Logs in if the account exists (Supabase checks the password), or
+  // creates a brand-new one if it doesn't.
+  // Returns { ok: true, row } or { ok: false, reason: 'bad_password' | 'short' | 'error' }.
+  window.fbLoginOrRegister = async function(username, password){
+    var email = emailFor(username);
+    try{
+      var signIn = await supabase.auth.signInWithPassword({ email: email, password: password });
+
+      if(!signIn.error){
+        var profile = await loadProfile(signIn.data.user.id);
+        return profile ? { ok: true, row: profile } : { ok: false, reason: 'error' };
+      }
+
+      // No matching account (or wrong password) — try creating one.
+      // If one already exists, signUp will tell us and we treat that
+      // as "wrong password" since sign-in already failed.
+      var signUp = await supabase.auth.signUp({ email: email, password: password });
+
+      if(signUp.error){
+        var msg = signUp.error.message || '';
+        if(/already registered|already exists/i.test(msg)) return { ok: false, reason: 'bad_password' };
+        if(/password/i.test(msg)) return { ok: false, reason: 'short' };
+        console.error('signUp failed', signUp.error);
+        return { ok: false, reason: 'error' };
+      }
+
+      if(!signUp.data.session){
+        // No session back means email confirmation is still required —
+        // see step 2 in the setup notes above.
+        console.error('No session after signUp — is "Confirm email" turned off?');
+        return { ok: false, reason: 'error' };
+      }
+
+      var created = await supabase.from('profiles').insert({
+        id: signUp.data.user.id,
+        display_name: username
+      }).select().single();
+
+      if(created.error){
+        console.error('profile insert failed', created.error);
+        return { ok: false, reason: 'error' };
+      }
+
+      return { ok: true, row: created.data };
+    }catch(e){
+      console.error('Supabase auth failed', e);
+      return { ok: false, reason: 'error' };
+    }
+  };
+
+  window.fbGetLeaderboard = async function(modeKey){
+    var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
+    try{
+      var res = await supabase.from('profiles').select('display_name,' + col).order(col, { ascending: false }).limit(10);
+      if(res.error) throw res.error;
+      return res.data.map(function(row){ return { name: row.display_name, score: row[col] }; });
+    }catch(e){
+      console.error('Supabase leaderboard read failed', e);
+      return [];
+    }
+  };
+
+  window.fbSubmitScore = async function(modeKey, score){
+    var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
+    try{
+      var userRes = await supabase.auth.getUser();
+      if(userRes.error || !userRes.data.user) return;
+      var userId = userRes.data.user.id;
+
+      var current = await supabase.from('profiles').select(col).eq('id', userId).single();
+      if(current.error) throw current.error;
+
+      if(score > current.data[col]){
+        var patch = {}; patch[col] = score; patch.updated_at = new Date().toISOString();
+        await supabase.from('profiles').update(patch).eq('id', userId);
+      }
+    }catch(e){
+      console.error('Supabase leaderboard write failed', e);
+    }
+  };
+
+  window.fbReady = true;
+</script>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var toggle = document.getElementById('themeToggle');
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  var theme = prefersLight ? 'light' : 'dark';
+  function applyTheme(){
+    root.setAttribute('data-theme', theme);
+    toggle.textContent = theme === 'light' ? '☀️' : '🌙';
+  }
+  applyTheme();
+  toggle.addEventListener('click', function(){
+    theme = theme === 'light' ? 'dark' : 'light';
+    applyTheme();
+  });
+})();
+
+(function(){
+  var screens = {
+    login: document.getElementById('screen-login'),
+    mode:  document.getElementById('screen-mode'),
+    game:  document.getElementById('screen-game'),
+    over:  document.getElementById('screen-over'),
+    leaderboard: document.getElementById('screen-leaderboard')
+  };
+  function show(name){
+    Object.keys(screens).forEach(function(k){
+      screens[k].classList.toggle('active', k === name);
+    });
+    document.body.classList.toggle('in-game', name === 'game');
+    if(name === 'login' || name === 'mode' || name === 'leaderboard'){
+      document.documentElement.style.removeProperty('--disco-bg');
+      document.documentElement.style.removeProperty('--disco-stage');
+      document.documentElement.style.removeProperty('--disco-text');
+    }
+  }
+
+  var playerName = '';
+  var mode = 'timer'; // 'timer' | 'zen'
+  var score = 0;
+  var round = 0;
+  var timerId = null;
+  var timeLeft = 5.0;
+  var highScores = { timer: 0, zen: 0 };
+  var hasStorage = true;
+
+  async function getLeaderboard(modeKey){
+    return await window.fbGetLeaderboard(modeKey);
+  }
+
+  async function submitScore(modeKey, s){
+    await window.fbSubmitScore(modeKey, s);
+  }
+
+  function renderList(elId, list){
+    var el = document.getElementById(elId);
+    el.innerHTML = '';
+    if(!list.length){
+      var li = document.createElement('li');
+      li.textContent = hasStorage ? 'No scores yet' : 'Leaderboard unavailable here';
+      li.className = 'lb-empty';
+      el.appendChild(li);
+      return;
+    }
+    list.forEach(function(entry){
+      var li = document.createElement('li');
+      li.textContent = entry.name + ' — ' + entry.score;
+      if(entry.name === playerName){ li.className = 'lb-me'; }
+      el.appendChild(li);
+    });
+  }
+
+  async function renderLeaderboard(){
+    var timerList = await getLeaderboard('timer');
+    var zenList = await getLeaderboard('zen');
+    renderList('lbTimerList', timerList);
+    renderList('lbZenList', zenList);
+  }
+
+  document.getElementById('viewLeaderboardBtn').addEventListener('click', async function(){
+    show('leaderboard');
+    await renderLeaderboard();
+  });
+  document.getElementById('lbBackBtn').addEventListener('click', function(){
+    show('mode');
+  });
+
+  var target = document.getElementById('target');
+  var decoys = [];
+  var DECOY_CHANCE = 0.35;
+  var stage = document.getElementById('stage');
+  var scoreValue = document.getElementById('scoreValue');
+  var timerValue = document.getElementById('timerValue');
+  var timerBlock = document.getElementById('timerBlock');
+
+  // ---- disco color helper (kept from the original concept) ----
+  function randColor(min, max){
+    var span = max - min;
+    var x = Math.trunc(Math.random()*span) + min;
+    var y = Math.trunc(Math.random()*span) + min;
+    var z = Math.trunc(Math.random()*span) + min;
+    return { x:x, y:y, z:z };
+  }
+  function disco(){
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var c, bg, stageBg, textC;
+    if(isLight){
+      var hue = Math.trunc(Math.random() * 360);
+      var sat = 60 + Math.trunc(Math.random() * 30);      // 60-90%, keeps hues vivid not washed out
+      var light = 78 + Math.trunc(Math.random() * 12);    // 78-90%, still pale enough to read text on
+      bg = 'hsla(' + hue + ',' + sat + '%,' + light + '%,0.92)';
+      stageBg = 'hsl(' + hue + ',' + sat + '%,' + light + '%)';
+      var textHue = (hue + 180) % 360;                    // complementary hue for a color-matched but readable contrast
+      textC = 'hsl(' + textHue + ',' + sat + '%,28%)';
+    } else {
+      c = randColor(0, 256);
+      bg = 'rgba('+c.x+','+c.y+','+c.z+',0.85)';
+      stageBg = 'rgb('+c.x+','+c.y+','+c.z+')';
+      textC = 'rgba('+Math.min(c.z+40,255)+','+c.x+','+c.y+',1)';
+    }
+    document.documentElement.style.setProperty('--disco-bg', bg);
+    document.documentElement.style.setProperty('--disco-text', textC);
+    document.documentElement.style.setProperty('--disco-stage', stageBg);
+  }
+
+  function safeTopOffset(){
+    var hud = document.getElementById('hud');
+    var hudRect = hud.getBoundingClientRect();
+    var stageRect = stage.getBoundingClientRect();
+    return Math.max(hudRect.bottom - stageRect.top, 0) + 12;
+  }
+
+  function placeTarget(){
+    var rect = stage.getBoundingClientRect();
+    var tw = target.offsetWidth || 140;
+    var th = target.offsetHeight || 110;
+    var topOffset = safeTopOffset();
+    var maxX = Math.max(rect.width - tw - 10, 10);
+    var maxY = Math.max(rect.height - th - topOffset - 10, 10);
+    var x = Math.trunc(Math.random() * maxX) + 5;
+    var y = Math.trunc(Math.random() * maxY) + topOffset;
+    target.style.left = x + 'px';
+    target.style.top = y + 'px';
+  }
+
+  function renderBest(){
+    var el = document.getElementById('bestScores');
+    if(el){ el.textContent = 'Best — Timer: ' + highScores.timer + ' · Zen: ' + highScores.zen; }
+  }
+
+  // ---------- LOGIN ----------
+  var loginBtn = document.getElementById('loginBtn');
+  var nameStatus = document.getElementById('nameStatus');
+
+  document.getElementById('loginBtn').addEventListener('click', async function(){
+    var name = document.getElementById('playerName').value.trim();
+    var password = document.getElementById('playerPassword').value;
+
+    if(!name){
+      nameStatus.style.color = 'var(--pink)';
+      nameStatus.textContent = 'enter a name first';
+      return;
+    }
+    if(!password){
+      nameStatus.style.color = 'var(--pink)';
+      nameStatus.textContent = 'enter a password';
+      return;
+    }
+
+    loginBtn.disabled = true;
+    nameStatus.style.color = 'var(--ink-dim)';
+    nameStatus.textContent = 'checking…';
+
+    var result = await window.fbLoginOrRegister(name, password);
+
+    loginBtn.disabled = false;
+
+    if(!result.ok){
+      nameStatus.style.color = 'var(--pink)';
+      nameStatus.textContent = {
+        bad_password: 'wrong password for that username',
+        short: 'password needs to be at least 6 characters',
+        error: "couldn't reach the leaderboard — try again"
+      }[result.reason] || "couldn't reach the leaderboard — try again";
+      return;
+    }
+
+    nameStatus.textContent = '';
+    playerName = result.row.display_name;
+    highScores.timer = result.row.timer_best || 0;
+    highScores.zen = result.row.zen_best || 0;
+
+    document.getElementById('welcomeName').textContent = playerName;
+    renderBest();
+    show('mode');
+  });
+  document.getElementById('playerName').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ document.getElementById('loginBtn').click(); }
+  });
+  document.getElementById('playerPassword').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ document.getElementById('loginBtn').click(); }
+  });
+
+  // ---------- MODE SELECT ----------
+  document.getElementById('pickTimer').addEventListener('click', function(){
+    mode = 'timer';
+    startGame();
+  });
+  document.getElementById('pickZen').addEventListener('click', function(){
+    mode = 'zen';
+    startGame();
+  });
+
+  // ---------- GAME ----------
+  function startGame(){
+    score = 0;
+    round = 0;
+    scoreValue.textContent = '0';
+    timerBlock.classList.toggle('hidden', mode === 'zen');
+    disco();
+    show('game');
+    requestAnimationFrame(placeTarget);
+    maybeShowDecoy();
+    if(mode === 'timer'){ startRound(); }
+    else { stopClock(); }
+  }
+
+  function getTimeLimit(s){
+    if(s < 10) return 10;
+    if(s < 20) return 7;
+    if(s < 30) return 6;
+    if(s < 40) return 5;
+    if(s < 50) return 4;
+    if(s < 60) return 3;
+    if(s < 70) return 2;
+    if(s < 80) return 1.5;
+    if(s < 90) return 1.2;
+    if(s < 100) return 1.05;
+
+    // beyond 100: same tapering logic, now starting from 1s instead of 2s.
+    var steps = Math.floor((s - 100) / 10);
+    var time = 1;
+    var decrement = 0.1;
+    for(var i = 0; i < steps; i++){
+      time = Math.round((time - decrement) * 100000) / 100000;
+      if(time <= decrement){ decrement = decrement / 10; }
+    }
+    return Math.max(time, 0.01);
+  }
+
+  function startRound(){
+    timeLeft = getTimeLimit(score);
+    updateTimerDisplay();
+    requestAnimationFrame(placeTarget);
+    maybeShowDecoy();
+    stopClock();
+    timerId = setInterval(function(){
+      timeLeft -= 0.1;
+      if(timeLeft <= 0){
+        timeLeft = 0;
+        updateTimerDisplay();
+        stopClock();
+        document.getElementById('overLabel').textContent = "TIME'S UP";
+        gameOver();
+        return;
+      }
+      updateTimerDisplay();
+    }, 100);
+  }
+
+  function updateTimerDisplay(){
+    var decimals = timeLeft < 0.1 ? 3 : (timeLeft < 1 ? 2 : 1);
+    timerValue.textContent = timeLeft.toFixed(decimals);
+    timerValue.classList.toggle('warn', timeLeft <= 2 && timeLeft > 0);
+  }
+
+  function stopClock(){
+    if(timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  function placeDecoyAwayFrom(el){
+    var rect = stage.getBoundingClientRect();
+    var tw = el.offsetWidth || 60;
+    var th = el.offsetHeight || 20;
+    var topOffset = safeTopOffset();
+    var maxX = Math.max(rect.width - tw - 10, 10);
+    var maxY = Math.max(rect.height - th - topOffset - 10, 10);
+    var x = Math.trunc(Math.random() * maxX) + 5;
+    var y = Math.trunc(Math.random() * maxY) + topOffset;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  }
+
+  function removeDecoy(){
+    decoys.forEach(function(el){ el.remove(); });
+    decoys = [];
+  }
+
+  function maxDecoysForScore(s){
+    if(s < 20) return 0;
+    if(s < 150) return 1;
+    if(s < 300) return 2;
+    if(s < 500) return 3;
+    return 4;
+  }
+
+  function spawnOneDecoy(){
+    var el = document.createElement('button');
+    el.className = 'decoy';
+    el.textContent = 'Not Here!';
+    stage.appendChild(el);
+    requestAnimationFrame(function(){ placeDecoyAwayFrom(el); });
+    el.addEventListener('click', function(){
+      var idx = decoys.indexOf(el);
+      if(idx > -1){ decoys.splice(idx, 1); }
+      el.remove();
+      if(mode === 'timer'){
+        timeLeft = Math.max(timeLeft - 1, 0.01);
+        updateTimerDisplay();
+      }
+    });
+    decoys.push(el);
+  }
+
+  function maybeShowDecoy(){
+    removeDecoy();
+    var cap = maxDecoysForScore(score);
+    if(cap <= 0) return;
+    for(var i = 0; i < cap; i++){
+      if(Math.random() < DECOY_CHANCE){ spawnOneDecoy(); }
+    }
+  }
+
+  target.addEventListener('click', function(){
+    score++;
+    round++;
+    scoreValue.textContent = String(score);
+    disco();
+    if(mode === 'timer'){
+      startRound();
+    } else {
+      requestAnimationFrame(placeTarget);
+      maybeShowDecoy();
+    }
+  });
+
+  document.getElementById('quitBtn').addEventListener('click', function(){
+    stopClock();
+    removeDecoy();
+    document.getElementById('overLabel').textContent = 'GAVE UP';
+    gameOver();
+  });
+
+  window.addEventListener('resize', function(){
+    if(screens.game.classList.contains('active')){ placeTarget(); }
+  });
+
+  function gameOver(){
+    removeDecoy();
+    document.getElementById('finalScore').textContent = String(score);
+
+    var isNew = score > highScores[mode];
+    if(isNew){
+      highScores[mode] = score;
+    }
+    document.getElementById('newHighBadge').classList.toggle('hidden', !isNew);
+    var modeLabel = mode === 'timer' ? 'Timer' : 'Zen';
+    document.getElementById('bestLine').textContent = modeLabel + ' best: ' + highScores[mode];
+    renderBest();
+    submitScore(mode, score);
+
+    show('over');
+  }
+
+  document.getElementById('retryBtn').addEventListener('click', function(){
+    startGame();
+  });
+  document.getElementById('menuBtn').addEventListener('click', function(){
+    show('mode');
+  });
+
+})();
+</script>
+</body>
+</html>
