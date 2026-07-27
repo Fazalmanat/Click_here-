@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Click here! — arcade button hunt</title>
-<meta name="description" content="A button is hiding somewhere on screen. Catch it before time runs out.">
+<meta name="description" content="Click 'here!'.It is hiding somewhere on screen. Catch it before time runs out.">
 <meta property="og:title" content="Click here!">
-<meta property="og:description" content="A button is hiding somewhere on screen. Catch it before time runs out.">
+<meta property="og:description" content="Click 'here!'.It is hiding somewhere on screen. Catch it before time runs out.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Click here!">
@@ -361,28 +361,7 @@
 <button id="themeToggle" aria-label="Toggle light and dark mode">🌙</button>
 <button id="muteToggle" aria-label="Toggle sound">🔊</button>
 
-<!-- ============================================================
-     AUDIO FILES
-     Drop your own files at these paths (relative to this HTML file),
-     or change the paths below to point wherever you host them:
 
-       sounds/bgm1.mp3        — background music, track 1 of 3
-       sounds/bgm2.mp3        — background music, track 2 of 3
-       sounds/bgm3.mp3        — background music, track 3 of 3
-       sounds/hit.mp3         — played when you tap the target
-       sounds/miss.mp3        — played when you tap a decoy
-       sounds/blink.mp3       — played when the target blinks at round end
-       sounds/timer-beep.mp3  — played each of the last 3 seconds (Timer mode)
-       sounds/game-over.mp3   — played when a round ends
-
-     Background music plays through this <audio> element and shuffles
-     between the three bgm tracks. The four short sound effects are
-     fetched and decoded into memory by the script below (Web Audio
-     buffers) rather than using <audio> tags, so they trigger instantly
-     on click instead of re-loading a file every time. If a file is
-     missing, that sound will just silently fail to play — nothing
-     else breaks.
-     ============================================================ -->
 <audio id="bgMusic" preload="auto"></audio>
 
 <div id="frame">
@@ -391,7 +370,7 @@
     <!-- LOGIN -->
     <section class="screen active" id="screen-login">
       <h1 class="logo arcade">CLICK <span>"here!"</span></h1>
-      <p class="tagline">a button is hiding somewhere on screen. catch it.</p>
+      <p class="tagline">Just Click 'here!'.It is hiding somewhere on screen. catch it.</p>
       <div class="card">
         <input id="playerName" type="text" placeholder="enter your name" maxlength="16" autocomplete="off">
         <input id="playerPassword" type="password" placeholder="password (min 6 chars)" maxlength="64" autocomplete="off" style="width:100%; padding:14px 16px; font-size:16px; font-family:'Space Grotesk', sans-serif; background:var(--bg); border:2px solid var(--hairline); border-radius:10px; color:var(--ink); outline:none; margin-bottom:18px;">
@@ -408,7 +387,7 @@
         <div class="mode-card timer" id="pickTimer">
           <div class="mode-icon">⏱️</div>
           <h3>Timer Mode</h3>
-          <p>5 seconds to catch each button before it's gone. How many rounds can you survive?</p>
+          <p>Just seconds to catch each button before it's gone. How many rounds can you survive?</p>
         </div>
         <div class="mode-card zen" id="pickZen">
           <div class="mode-icon">🌙</div>
@@ -471,42 +450,7 @@
   </div>
 </div>
 
-<!-- ============================================================
-     SUPABASE SETUP (using Supabase Auth)
-     1. Create a project at https://supabase.com/dashboard
 
-     2. Authentication > Providers > Email > turn OFF "Confirm email".
-        This game signs people up with a made-up address built from
-        their username (there's no real inbox behind it), so email
-        confirmation links would never arrive — this has to be off.
-
-     3. SQL Editor > run this. It creates a public profile row for each
-        auth user, holding their display name and best scores. Row
-        Level Security means a player can only ever insert/update their
-        own row — Supabase Auth handles all password hashing/checking
-        internally, so none of that lives in this app's code anymore:
-
-        create table profiles (
-          id uuid primary key references auth.users(id) on delete cascade,
-          display_name text not null,
-          timer_best int not null default 0,
-          zen_best int not null default 0,
-          updated_at timestamptz not null default now()
-        );
-
-        alter table profiles enable row level security;
-        create policy "public read"    on profiles for select using (true);
-        create policy "insert own row" on profiles for insert with check (auth.uid() = id);
-        create policy "update own row" on profiles for update using (auth.uid() = id);
-
-        Uniqueness comes for free: Supabase Auth already enforces one
-        account per email, and each account maps to exactly one
-        username via the fake address below — so two people can't
-        register the same username.
-
-     4. Project settings > API > copy the "Project URL" and "anon public"
-        key into the placeholders below.
-     ============================================================ -->
 <script type="module">
   import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
