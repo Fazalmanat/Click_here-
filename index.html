@@ -273,15 +273,30 @@
   #target:active{ transform:scale(.92); }
 
   @keyframes missBlink{
-    0%, 100%{ opacity:1; }
-    25%, 75%{ opacity:.1; }
-    50%{ opacity:1; }
+    0%, 100%{
+      transform: scale(1);
+      background: transparent;
+      color: var(--disco-text);
+      box-shadow: none;
+    }
+    20%, 60%{
+      transform: scale(1.35);
+      background: var(--disco-text);
+      color: var(--disco-stage);
+      box-shadow: 0 0 0 6px var(--disco-text), 0 0 24px 8px var(--disco-text);
+    }
+    40%, 80%{
+      transform: scale(1);
+      background: transparent;
+      color: var(--disco-text);
+      box-shadow: none;
+    }
   }
   #target.missed{
-    animation: missBlink .55s ease-in-out 1;
-    outline: 2px solid var(--disco-text);
-    outline-offset: 3px;
-    border-radius: 6px;
+    animation: missBlink .8s steps(1, end) 1;
+    outline: 3px solid var(--disco-text);
+    outline-offset: 4px;
+    border-radius: 8px;
     pointer-events: none;
   }
 
@@ -1022,7 +1037,7 @@ window.AudioEngine = (function(){
     setTimeout(function(){
       target.classList.remove('missed');
       gameOver();
-    }, 600);
+    }, 850);
   }
 
   var lastBeepSecond = null;
