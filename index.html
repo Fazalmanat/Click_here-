@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Click here! — arcade button hunt</title>
+<meta name="description" content="A button is hiding somewhere on screen. Catch it before time runs out.">
+<meta property="og:title" content="Click here!">
+<meta property="og:description" content="A button is hiding somewhere on screen. Catch it before time runs out.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Click here!">
+<meta name="twitter:description" content="A button is hiding somewhere on screen. Catch it before time runs out.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -174,6 +181,26 @@
   }
   body.in-game #themeToggle{ display:none; }
 
+  #muteToggle{
+    position:fixed;
+    top: calc(var(--frame-gap) + 14px);
+    right: calc(var(--frame-gap) + 14px + 58px);
+    z-index:10;
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--card-bg);
+    border:1px solid var(--card-border);
+    color:var(--ink);
+    font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  body.in-game #muteToggle{
+    top:auto; right:auto;
+    bottom: calc(var(--frame-gap) + 14px);
+    left: calc(var(--frame-gap) + 14px);
+  }
+
   /* ---------- MODE SELECT ---------- */
   .mode-title{ font-size:clamp(16px,3vw,20px); color:var(--ink-dim); margin-bottom:22px; }
   .best-line{ font-size:12px; color:var(--ink-dim); letter-spacing:1px; margin:-14px 0 22px; }
@@ -301,6 +328,30 @@
 <body>
 
 <button id="themeToggle" aria-label="Toggle light and dark mode">🌙</button>
+<button id="muteToggle" aria-label="Toggle sound">🔊</button>
+
+<!-- ============================================================
+     AUDIO FILES
+     Drop your own files at these paths (relative to this HTML file),
+     or change the paths below to point wherever you host them:
+
+       sounds/bgm1.mp3        — background music, track 1 of 3
+       sounds/bgm2.mp3        — background music, track 2 of 3
+       sounds/bgm3.mp3        — background music, track 3 of 3
+       sounds/hit.mp3         — played when you tap the target
+       sounds/miss.mp3        — played when you tap a decoy
+       sounds/timer-beep.mp3  — played each of the last 3 seconds (Timer mode)
+       sounds/game-over.mp3   — played when a round ends
+
+     Background music plays through this <audio> element and shuffles
+     between the three bgm tracks. The four short sound effects are
+     fetched and decoded into memory by the script below (Web Audio
+     buffers) rather than using <audio> tags, so they trigger instantly
+     on click instead of re-loading a file every time. If a file is
+     missing, that sound will just silently fail to play — nothing
+     else breaks.
+     ============================================================ -->
+<audio id="bgMusic" preload="auto"></audio>
 
 <div id="frame">
   <div id="stage">
@@ -526,6 +577,160 @@
 </script>
 
 <script>
+// ---------- AUDIO ENGINE ----------
+// Background music: plain <audio> element (fine for a long continuous track).
+// One-shot SFX: decoded into Web Audio buffers ahead of time and played via
+// AudioBufferSourceNode — cloning an <audio> element and calling play() on
+// it has to re-buffer the file from scratch every single time, which is
+// exactly what caused the click-to-sound delay. Playing from an already-
+// decoded buffer is effectively instant.
+window.AudioEngine = (function(){
+  var muted = false;
+  try{
+    var savedMute = localStorage.getItem('find-it-muted');
+    if(savedMute === '1'){ muted = true; }
+  }catch(e){ /* ignore */ }
+
+  var musicEl = document.getElementById('bgMusic');
+  if(musicEl){ musicEl.volume = 0.35; musicEl.muted = muted; }
+
+  var BGM_TRACKS = ['sounds/bgm1.mp3', 'sounds/bgm2.mp3', 'sounds/bgm3.mp3'];
+  var lastTrackIdx = -1;
+  var musicStarted = false;
+
+  function pickTrackIdx(){
+    if(BGM_TRACKS.length <= 1) return 0;
+    var idx;
+    do{ idx = Math.floor(Math.random() * BGM_TRACKS.length); }
+    while(idx === lastTrackIdx);
+    return idx;
+  }
+
+  function playRandomTrack(){
+    if(!musicEl) return;
+    var idx = pickTrackIdx();
+    lastTrackIdx = idx;
+    musicEl.src = BGM_TRACKS[idx];
+    musicEl.play().catch(function(){ /* blocked until a user gesture happens */ });
+  }
+
+  if(musicEl){
+    // When one track ends, shuffle to another rather than looping the
+    // same file — only while music is actually meant to be playing.
+    musicEl.addEventListener('ended', function(){
+      if(musicStarted){ playRandomTrack(); }
+    });
+  }
+
+  function startMusic(){
+    if(!musicEl || musicStarted) return;
+    musicStarted = true;
+    playRandomTrack();
+  }
+  function stopMusic(){
+    musicStarted = false;
+    if(musicEl){ musicEl.pause(); }
+  }
+
+  // ---- Web Audio buffer playback for SFX (low-latency) ----
+  var ctx = null;
+  var buffers = {}; // name -> AudioBuffer, once decoded
+
+  function ensureCtx(){
+    if(!ctx){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      ctx = new Ctx();
+    }
+    if(ctx.state === 'suspended'){ ctx.resume(); }
+    return ctx;
+  }
+
+  function loadBuffer(name, url){
+    var c = ensureCtx();
+    if(!c) return;
+    fetch(url)
+      .then(function(res){ return res.arrayBuffer(); })
+      .then(function(data){ return c.decodeAudioData(data); })
+      .then(function(decoded){ buffers[name] = decoded; })
+      .catch(function(){ /* file missing or couldn't decode — that SFX just won't play */ });
+  }
+
+  function playBuffer(name, playbackRate){
+    if(muted) return;
+    var c = ensureCtx();
+    var buf = buffers[name];
+    if(!c || !buf) return;
+    var source = c.createBufferSource();
+    var gain = c.createGain();
+    source.buffer = buf;
+    source.playbackRate.value = playbackRate || 1;
+    gain.gain.value = 0.6;
+    source.connect(gain);
+    gain.connect(c.destination);
+    source.start(0);
+  }
+
+  function hitSound(){ playBuffer('hit'); }
+  function missSound(){ playBuffer('miss'); }
+  function timerBeep(urgent){ playBuffer('beep', urgent ? 1.25 : 1); }
+  function gameOverSound(){ playBuffer('over'); }
+
+  function setMuted(v){
+    muted = v;
+    try{ localStorage.setItem('find-it-muted', muted ? '1' : '0'); }catch(e){ /* ignore */ }
+    if(musicEl){ musicEl.muted = muted; }
+  }
+  function isMuted(){ return muted; }
+
+  // Kick off decoding immediately so buffers are ready well before the
+  // first click — ensureCtx() itself is a no-op until a user gesture
+  // resumes the context, but fetch+decode can happen in the background
+  // regardless.
+  loadBuffer('hit', 'sounds/hit.mp3');
+  loadBuffer('miss', 'sounds/miss.mp3');
+  loadBuffer('beep', 'sounds/timer-beep.mp3');
+  loadBuffer('over', 'sounds/game-over.mp3');
+
+  return {
+    hitSound: hitSound,
+    missSound: missSound,
+    timerBeep: timerBeep,
+    gameOverSound: gameOverSound,
+    startMusic: startMusic,
+    stopMusic: stopMusic,
+    setMuted: setMuted,
+    isMuted: isMuted,
+    ensureCtx: ensureCtx
+  };
+})();
+
+(function(){
+  var muteBtn = document.getElementById('muteToggle');
+  function render(){ muteBtn.textContent = window.AudioEngine.isMuted() ? '🔇' : '🔊'; }
+  render();
+  muteBtn.addEventListener('click', function(){
+    window.AudioEngine.ensureCtx();
+    window.AudioEngine.setMuted(!window.AudioEngine.isMuted());
+    render();
+  });
+
+  // Browsers require a real user gesture before audio can play — start
+  // the music the moment the person interacts with the page at all
+  // (typing, clicking, tapping), so it's already going by the time
+  // they're done logging in rather than only starting afterward.
+  function firstGesture(){
+    window.AudioEngine.ensureCtx();
+    window.AudioEngine.startMusic();
+    document.removeEventListener('pointerdown', firstGesture);
+    document.removeEventListener('keydown', firstGesture);
+  }
+  document.addEventListener('pointerdown', firstGesture);
+  document.addEventListener('keydown', firstGesture);
+})();
+</script>
+
+<script>
 (function(){
   var root = document.documentElement;
   var toggle = document.getElementById('themeToggle');
@@ -554,13 +759,22 @@
     Object.keys(screens).forEach(function(k){
       screens[k].classList.toggle('active', k === name);
     });
-    document.body.classList.toggle('in-game', name === 'game');
+    document.body.classList.toggle('in-game', name === 'game' || name === 'over');
     if(name === 'login' || name === 'mode' || name === 'leaderboard'){
       document.documentElement.style.removeProperty('--disco-bg');
       document.documentElement.style.removeProperty('--disco-stage');
       document.documentElement.style.removeProperty('--disco-text');
     }
   }
+
+  // The game is mouse/tap-only — make sure a keyboard-focused button
+  // (e.g. the target, right after it's clicked) can never be triggered
+  // by Enter/Space while actually playing.
+  document.addEventListener('keydown', function(e){
+    if(screens.game.classList.contains('active') && (e.key === 'Enter' || e.key === ' ')){
+      e.preventDefault();
+    }
+  });
 
   var playerName = '';
   var mode = 'timer'; // 'timer' | 'zen'
@@ -719,6 +933,7 @@
 
     document.getElementById('welcomeName').textContent = playerName;
     renderBest();
+    window.AudioEngine.startMusic();
     show('mode');
   });
   document.getElementById('playerName').addEventListener('keydown', function(e){
@@ -775,8 +990,11 @@
     return Math.max(time, 0.01);
   }
 
+  var lastBeepSecond = null;
+
   function startRound(){
     timeLeft = getTimeLimit(score);
+    lastBeepSecond = null;
     updateTimerDisplay();
     requestAnimationFrame(placeTarget);
     maybeShowDecoy();
@@ -792,6 +1010,11 @@
         return;
       }
       updateTimerDisplay();
+      var wholeSecond = Math.ceil(timeLeft - 0.001);
+      if(wholeSecond <= 3 && wholeSecond >= 1 && wholeSecond !== lastBeepSecond){
+        lastBeepSecond = wholeSecond;
+        window.AudioEngine.timerBeep(wholeSecond === 1);
+      }
     }, 100);
   }
 
@@ -838,6 +1061,8 @@
     stage.appendChild(el);
     requestAnimationFrame(function(){ placeDecoyAwayFrom(el); });
     el.addEventListener('click', function(){
+      el.blur();
+      window.AudioEngine.missSound();
       var idx = decoys.indexOf(el);
       if(idx > -1){ decoys.splice(idx, 1); }
       el.remove();
@@ -859,6 +1084,8 @@
   }
 
   target.addEventListener('click', function(){
+    target.blur();
+    window.AudioEngine.hitSound();
     score++;
     round++;
     scoreValue.textContent = String(score);
@@ -884,6 +1111,7 @@
 
   function gameOver(){
     removeDecoy();
+    window.AudioEngine.gameOverSound();
     document.getElementById('finalScore').textContent = String(score);
 
     var isNew = score > highScores[mode];
