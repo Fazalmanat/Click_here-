@@ -196,9 +196,7 @@
     cursor:pointer;
   }
   body.in-game #muteToggle{
-    top:auto; right:auto;
-    bottom: calc(var(--frame-gap) + 14px);
-    left: calc(var(--frame-gap) + 14px);
+    right: calc(var(--frame-gap) + 14px);
   }
 
   /* ---------- MODE SELECT ---------- */
@@ -237,6 +235,9 @@
     z-index:5;
     pointer-events:none;
   }
+  body.in-game #hud{
+    padding-right: calc(clamp(14px,3vw,26px) + 56px);
+  }
   .hud-block{ text-align:left; }
   .hud-label{ font-size:10px; letter-spacing:2px; color:var(--ink-dim); margin:0 0 4px; }
   .hud-value{ font-size:clamp(20px,5vw,30px); margin:0; color:var(--ink); }
@@ -270,6 +271,19 @@
     cursor:default;
   }
   #target:active{ transform:scale(.92); }
+
+  @keyframes missBlink{
+    0%, 100%{ opacity:1; }
+    25%, 75%{ opacity:.1; }
+    50%{ opacity:1; }
+  }
+  #target.missed{
+    animation: missBlink .55s ease-in-out 1;
+    outline: 2px solid var(--disco-text);
+    outline-offset: 3px;
+    border-radius: 6px;
+    pointer-events: none;
+  }
 
   .decoy{
     position:absolute;
@@ -340,6 +354,7 @@
        sounds/bgm3.mp3        — background music, track 3 of 3
        sounds/hit.mp3         — played when you tap the target
        sounds/miss.mp3        — played when you tap a decoy
+       sounds/blink.mp3       — played when the target blinks at round end
        sounds/timer-beep.mp3  — played each of the last 3 seconds (Timer mode)
        sounds/game-over.mp3   — played when a round ends
 
@@ -675,6 +690,7 @@ window.AudioEngine = (function(){
   function missSound(){ playBuffer('miss'); }
   function timerBeep(urgent){ playBuffer('beep', urgent ? 1.25 : 1); }
   function gameOverSound(){ playBuffer('over'); }
+  function blinkSound(){ playBuffer('blink'); }
 
   function setMuted(v){
     muted = v;
@@ -691,12 +707,14 @@ window.AudioEngine = (function(){
   loadBuffer('miss', 'sounds/miss.mp3');
   loadBuffer('beep', 'sounds/timer-beep.mp3');
   loadBuffer('over', 'sounds/game-over.mp3');
+  loadBuffer('blink', 'sounds/blink.mp3');
 
   return {
     hitSound: hitSound,
     missSound: missSound,
     timerBeep: timerBeep,
     gameOverSound: gameOverSound,
+    blinkSound: blinkSound,
     startMusic: startMusic,
     stopMusic: stopMusic,
     setMuted: setMuted,
@@ -865,10 +883,15 @@ window.AudioEngine = (function(){
   }
 
   function safeTopOffset(){
-    var hud = document.getElementById('hud');
-    var hudRect = hud.getBoundingClientRect();
     var stageRect = stage.getBoundingClientRect();
-    return Math.max(hudRect.bottom - stageRect.top, 0) + 12;
+    var hud = document.getElementById('hud');
+    var mute = document.getElementById('muteToggle');
+    var quit = document.getElementById('quitBtn');
+    var bottoms = [hud, mute, quit].filter(Boolean).map(function(el){
+      return el.getBoundingClientRect().bottom;
+    });
+    var maxBottom = Math.max.apply(null, bottoms);
+    return Math.max(maxBottom - stageRect.top, 0) + 12;
   }
 
   function placeTarget(){
@@ -990,6 +1013,18 @@ window.AudioEngine = (function(){
     return Math.max(time, 0.01);
   }
 
+  function endRound(label){
+    stopClock();
+    removeDecoy();
+    document.getElementById('overLabel').textContent = label;
+    target.classList.add('missed');
+    window.AudioEngine.blinkSound();
+    setTimeout(function(){
+      target.classList.remove('missed');
+      gameOver();
+    }, 600);
+  }
+
   var lastBeepSecond = null;
 
   function startRound(){
@@ -1004,9 +1039,7 @@ window.AudioEngine = (function(){
       if(timeLeft <= 0){
         timeLeft = 0;
         updateTimerDisplay();
-        stopClock();
-        document.getElementById('overLabel').textContent = "TIME'S UP";
-        gameOver();
+        endRound("TIME'S UP");
         return;
       }
       updateTimerDisplay();
@@ -1099,10 +1132,7 @@ window.AudioEngine = (function(){
   });
 
   document.getElementById('quitBtn').addEventListener('click', function(){
-    stopClock();
-    removeDecoy();
-    document.getElementById('overLabel').textContent = 'GAVE UP';
-    gameOver();
+    endRound('GAVE UP');
   });
 
   window.addEventListener('resize', function(){
