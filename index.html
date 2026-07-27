@@ -352,6 +352,8 @@
   .lb-col li.lb-me::marker{ color:var(--amber); }
 
   .hidden{ display:none !important; }
+
+  @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -419,7 +421,10 @@
 
     <!-- LEADERBOARD -->
     <section class="screen" id="screen-leaderboard">
-      <p class="mode-title arcade" style="font-size:14px;">LEADERBOARD</p>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:0;">
+        <p class="mode-title arcade" style="font-size:14px; margin:0;">LEADERBOARD</p>
+        <button class="btn-secondary" id="lbRefreshBtn" style="font-size:11px; padding:8px 12px;" aria-label="Refresh leaderboard">⟳</button>
+      </div>
       <div class="lb-columns">
         <div class="lb-col">
           <h4>Timer</h4>
@@ -788,6 +793,7 @@ window.AudioEngine = (function(){
     over:  document.getElementById('screen-over'),
     leaderboard: document.getElementById('screen-leaderboard')
   };
+  var lbAutoRefreshId = null;
   function show(name){
     Object.keys(screens).forEach(function(k){
       screens[k].classList.toggle('active', k === name);
@@ -797,6 +803,13 @@ window.AudioEngine = (function(){
       document.documentElement.style.removeProperty('--disco-bg');
       document.documentElement.style.removeProperty('--disco-stage');
       document.documentElement.style.removeProperty('--disco-text');
+    }
+    if(name === 'leaderboard'){
+      if(lbAutoRefreshId){ clearInterval(lbAutoRefreshId); }
+      lbAutoRefreshId = setInterval(renderLeaderboard, 8000);
+    } else if(lbAutoRefreshId){
+      clearInterval(lbAutoRefreshId);
+      lbAutoRefreshId = null;
     }
   }
 
@@ -854,6 +867,14 @@ window.AudioEngine = (function(){
   document.getElementById('viewLeaderboardBtn').addEventListener('click', async function(){
     show('leaderboard');
     await renderLeaderboard();
+  });
+  var lbRefreshBtn = document.getElementById('lbRefreshBtn');
+  lbRefreshBtn.addEventListener('click', async function(){
+    lbRefreshBtn.disabled = true;
+    lbRefreshBtn.style.animation = 'spin .6s linear infinite';
+    await renderLeaderboard();
+    lbRefreshBtn.style.animation = '';
+    lbRefreshBtn.disabled = false;
   });
   document.getElementById('lbBackBtn').addEventListener('click', function(){
     show('mode');
