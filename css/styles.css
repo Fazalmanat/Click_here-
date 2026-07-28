@@ -331,10 +331,70 @@ button{
 /* ============================================================
    GAME OVER
    ============================================================ */
-.final-score{ font-size:clamp(48px,12vw,84px); color:var(--pink); margin:6px 0 2px; }
-.final-label{ color:var(--ink-dim); font-size:13px; letter-spacing:2px; margin-bottom:26px; }
-.btn-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
-#bestLine{ margin:4px 0 26px; }
+#screen-over {
+  display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.over-card {
+  background:rgba(18,12,30,0.82);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--card-border);
+  box-shadow:0 12px 48px rgba(0,0,0,0.65), inset 0 0 0 1px rgba(255,255,255,0.06);
+  border-radius:20px;
+  padding:24px 20px;
+  width:min(92vw,420px);
+  text-align:center;
+  display:flex; flex-direction:column; align-items:center;
+  animation:popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popIn {
+  from { transform:scale(0.9) translateY(10px); opacity:0; }
+  to { transform:scale(1) translateY(0); opacity:1; }
+}
+
+.final-score{ font-size:clamp(44px,10vw,72px); color:var(--pink); margin:4px 0 0; text-shadow:0 0 20px var(--pink-glow); }
+.final-label{ color:var(--ink-dim); font-size:12px; letter-spacing:2px; margin-bottom:14px; }
+.btn-row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%; }
+
+/* EXP Progress Slider Card */
+.over-xp-card {
+  width:100%;
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:12px;
+  padding:12px 14px;
+  margin:10px 0;
+  display:flex; flex-direction:column; gap:6px;
+}
+.over-xp-header {
+  display:flex; justify-content:space-between; align-items:center;
+}
+.over-xp-bar-track {
+  position:relative;
+  width:100%; height:12px;
+  background:var(--hairline-soft);
+  border-radius:99px;
+  overflow:hidden;
+}
+.over-xp-bar-base {
+  position:absolute; top:0; left:0; bottom:0;
+  background:linear-gradient(90deg, #00c3e3, #0077ff);
+  border-radius:99px 0 0 99px;
+  width:0%;
+  transition:width 0.5s ease-out;
+}
+.over-xp-bar-added {
+  position:absolute; top:0; bottom:0;
+  background:linear-gradient(90deg, #ff2e88, #ffcc00);
+  box-shadow:0 0 10px rgba(255,46,136,0.8);
+  border-radius:0 99px 99px 0;
+  width:0%;
+  transition:width 1s cubic-bezier(0.4,0,0.2,1);
+}
+.over-xp-labels {
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--ink-dim);
+}
 
 /* ============================================================
    LEADERBOARD
@@ -350,8 +410,16 @@ button{
 .lb-col li{ font-size:13px; color:var(--ink); }
 .lb-col li.lb-empty{ color:var(--ink-dim); list-style:none; margin-left:-20px; }
 .lb-col li.lb-me{ color:var(--amber); font-weight:600; }
-.lb-col li.lb-me::marker{ color:var(--amber); }
-#lbRefreshBtn{ display:flex; align-items:center; gap:7px; margin-top:18px; }
+.lb-btn-row{
+  display:flex; gap:12px; justify-content:center; align-items:center;
+  width:min(90vw,380px); margin-top:14px;
+}
+.lb-btn{
+  flex:1; display:inline-flex; align-items:center; justify-content:center;
+  gap:6px; padding:10px 14px; height:42px; font-size:12px;
+  white-space:nowrap; box-sizing:border-box;
+}
+.lb-refresh-icon{ display:inline-block; font-size:14px; line-height:1; }
 
 /* ============================================================
    PROFILE

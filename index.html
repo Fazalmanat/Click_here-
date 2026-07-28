@@ -94,11 +94,11 @@
         </div>
       </div>
       <p class="best-line" id="lbNote" style="margin-top:14px;margin-bottom:4px;">shared across everyone playing this game</p>
-      <div class="btn-row" style="margin-top:14px;">
-        <button class="btn-secondary" id="lbRefreshBtn" aria-label="Refresh leaderboard">
-          <span class="lb-refresh-icon" style="display:inline-block;">⟳</span> Refresh
+      <div class="lb-btn-row">
+        <button class="btn-secondary lb-btn" id="lbRefreshBtn" aria-label="Refresh leaderboard">
+          <span class="lb-refresh-icon">⟳</span> Refresh
         </button>
-        <button class="btn-secondary" id="lbBackBtn">← Back to modes</button>
+        <button class="btn-secondary lb-btn" id="lbBackBtn">← Back to modes</button>
       </div>
     </section>
 
@@ -123,15 +123,34 @@
 
     <!-- ======== GAME OVER ======== -->
     <section class="screen" id="screen-over">
-      <p class="final-label arcade" style="font-size:11px;" id="overLabel">TIME'S UP</p>
-      <p class="new-high hidden" id="newHighBadge">★ NEW HIGH SCORE ★</p>
-      <p class="final-score arcade" id="finalScore">0</p>
-      <p class="final-label">rounds cleared</p>
-      <p class="xp-earned-badge" id="xpEarnedBadge">+0 EXP</p>
-      <p class="best-line" id="bestLine"></p>
-      <div class="btn-row">
-        <button class="btn-primary arcade" style="font-size:11px;width:auto;padding:14px 22px;" id="retryBtn">RETRY</button>
-        <button class="btn-secondary" id="menuBtn">Back to modes</button>
+      <div class="over-card">
+        <p class="final-label arcade" style="font-size:11px;" id="overLabel">TIME'S UP</p>
+        <p class="new-high hidden" id="newHighBadge">★ NEW HIGH SCORE ★</p>
+        <p class="final-score arcade" id="finalScore">0</p>
+        <p class="final-label" style="margin-bottom:10px;">rounds cleared</p>
+
+        <!-- EXP Progress Slider Card -->
+        <div class="over-xp-card">
+          <div class="over-xp-header">
+            <span class="over-xp-title arcade" style="font-size:9px;color:var(--cyan);">EXP PROGRESS</span>
+            <span class="xp-earned-text arcade" id="overXpEarnedText" style="font-size:9px;color:var(--amber);">+0 XP</span>
+          </div>
+          <div class="over-xp-bar-track">
+            <div class="over-xp-bar-base" id="overXpBaseFill"></div>
+            <div class="over-xp-bar-added" id="overXpAddedFill"></div>
+          </div>
+          <div class="over-xp-labels">
+            <span id="overXpPrev">Prev: 0 XP</span>
+            <span id="overXpTotal" style="color:var(--amber);font-weight:600;">Total: 0 XP</span>
+          </div>
+        </div>
+
+        <p class="best-line" id="bestLine" style="margin:10px 0 16px;"></p>
+
+        <div class="btn-row">
+          <button class="btn-primary arcade" style="font-size:11px;width:auto;padding:14px 22px;" id="retryBtn">RETRY</button>
+          <button class="btn-secondary" id="menuBtn">Back to modes</button>
+        </div>
       </div>
     </section>
 

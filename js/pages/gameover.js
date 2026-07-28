@@ -20,6 +20,8 @@
       var bonusXP = isNewHigh ? 10 : 0;
       var earnedXP = baseXP + bonusXP;
 
+      var prevTotalXP = window.AppState.totalXP || 0;
+
       if(isNewHigh){
         window.AppState.highScores[mode] = score;
         if(window.AudioEngine && window.AudioEngine.celebrationSound){
@@ -27,7 +29,8 @@
         }
       }
 
-      window.AppState.totalXP = (window.AppState.totalXP || 0) + earnedXP;
+      var newTotalXP = prevTotalXP + earnedXP;
+      window.AppState.totalXP = newTotalXP;
       if(window.AppState.playerName){
         try{ localStorage.setItem('clickhere_xp_' + window.AppState.playerName, window.AppState.totalXP); }catch(e){}
       }
@@ -35,14 +38,39 @@
       var modeLabel = mode === 'timer' ? 'Timer' : 'Zen';
       document.getElementById('bestLine').textContent = modeLabel + ' best: ' + window.AppState.highScores[mode];
 
-      /* Display EXP Earned on results screen */
-      var xpBadge = document.getElementById('xpEarnedBadge');
-      if(xpBadge){
-        if(isNewHigh){
-          xpBadge.textContent = '+' + baseXP + ' EXP + 10 BONUS EXP! 🎉 (Total: ' + window.AppState.totalXP + ' XP)';
-        } else {
-          xpBadge.textContent = '+' + earnedXP + ' EXP Earned! (Total: ' + window.AppState.totalXP + ' XP)';
-        }
+      /* EXP Progress Slider Animation */
+      var earnedTextEl = document.getElementById('overXpEarnedText');
+      var prevTextEl   = document.getElementById('overXpPrev');
+      var totalTextEl  = document.getElementById('overXpTotal');
+      var baseFillEl   = document.getElementById('overXpBaseFill');
+      var addedFillEl  = document.getElementById('overXpAddedFill');
+
+      if(earnedTextEl){
+        earnedTextEl.textContent = isNewHigh ? ('+' + baseXP + ' XP + 10 BONUS! 🎉') : ('+' + earnedXP + ' XP');
+      }
+      if(prevTextEl)  prevTextEl.textContent  = 'Prev: ' + prevTotalXP + ' XP';
+      if(totalTextEl) totalTextEl.textContent = 'Total: ' + newTotalXP + ' XP';
+
+      /* Calculate fill percentages for slider (within 50 XP level buckets) */
+      var XP_PER_LEVEL = 50;
+      var prevPercent = ((prevTotalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
+      var addedPercent = (earnedXP / XP_PER_LEVEL) * 100;
+      var targetWidth = Math.min(addedPercent, 100 - prevPercent);
+      if(targetWidth <= 0 && earnedXP > 0){ targetWidth = 100 - prevPercent; }
+
+      if(baseFillEl && addedFillEl){
+        baseFillEl.style.transition = 'none';
+        addedFillEl.style.transition = 'none';
+        baseFillEl.style.width = prevPercent.toFixed(1) + '%';
+        addedFillEl.style.left = prevPercent.toFixed(1) + '%';
+        addedFillEl.style.width = '0%';
+
+        requestAnimationFrame(function(){
+          requestAnimationFrame(function(){
+            addedFillEl.style.transition = 'width 1s cubic-bezier(.4,0,.2,1)';
+            addedFillEl.style.width = Math.max(targetWidth, 3).toFixed(1) + '%';
+          });
+        });
       }
 
       /* Submit score to Supabase asynchronously */
