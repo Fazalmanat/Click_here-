@@ -65,11 +65,13 @@
     position:fixed; inset:0;
     padding:var(--frame-gap);
     background: var(--disco-bg);
+    border-radius: 26px;
     transition: background .35s ease;
   }
   #frame::before{
     content:""; position:absolute; inset:0;
     padding:var(--frame-gap);
+    border-radius: 26px;
     background:
       repeating-linear-gradient(90deg,
         var(--disco-text) 0 24px, transparent 24px 48px);
@@ -417,13 +419,15 @@
         </div>
       </div>
       <button class="btn-secondary" id="viewLeaderboardBtn" style="margin-top:22px; font-size:11px;">🏆 Leaderboard</button>
+      <button class="btn-secondary" id="logoutBtn" style="margin-top:12px; font-size:11px;">Log out</button>
     </section>
 
     <!-- LEADERBOARD -->
     <section class="screen" id="screen-leaderboard">
-      <div style="display:flex; align-items:center; gap:10px; margin-bottom:0;">
+      <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; width:min(90vw, 460px);">
+        <span></span>
         <p class="mode-title arcade" style="font-size:14px; margin:0;">LEADERBOARD</p>
-        <button class="btn-secondary" id="lbRefreshBtn" style="font-size:11px; padding:8px 12px;" aria-label="Refresh leaderboard">⟳</button>
+        <button class="btn-secondary" id="lbRefreshBtn" style="font-size:11px; padding:8px 12px; justify-self:start;" aria-label="Refresh leaderboard">⟳</button>
       </div>
       <div class="lb-columns">
         <div class="lb-col">
@@ -608,6 +612,25 @@
     }
   };
 
+  window.fbGetSession = async function(){
+    try{
+      var sessionRes = await supabase.auth.getSession();
+      if(sessionRes.error || !sessionRes.data.session) return null;
+      return await loadProfile(sessionRes.data.session.user.id);
+    }catch(e){
+      console.error('session check failed', e);
+      return null;
+    }
+  };
+
+  window.fbLogout = async function(){
+    try{
+      await supabase.auth.signOut();
+    }catch(e){
+      console.error('logout failed', e);
+    }
+  };
+
   window.fbReady = true;
 </script>
 
@@ -673,6 +696,27 @@ window.AudioEngine = (function(){
     musicStarted = false;
     if(musicEl){ musicEl.pause(); }
   }
+
+  // Mobile OSes pause background <audio> when the screen locks or the app
+  // is backgrounded. Nothing fires a fresh "user gesture" when we come
+  // back, so without this the track would just silently stay paused —
+  // this resumes it automatically as soon as the tab is visible again.
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && musicStarted && musicEl && musicEl.paused){
+      musicEl.play().catch(function(e){
+        console.error('BGM resume on visibility failed:', e);
+        musicStarted = false; // let the next tap re-trigger startMusic()
+      });
+    }
+  });
+  window.addEventListener('pageshow', function(){
+    if(musicStarted && musicEl && musicEl.paused){
+      musicEl.play().catch(function(e){
+        console.error('BGM resume on pageshow failed:', e);
+        musicStarted = false;
+      });
+    }
+  });
 
   // ---- Web Audio buffer playback for SFX (low-latency) ----
   var ctx = null;
@@ -1014,6 +1058,16 @@ window.AudioEngine = (function(){
     if(e.key === 'Enter'){ document.getElementById('loginBtn').click(); }
   });
 
+  document.getElementById('logoutBtn').addEventListener('click', async function(){
+    await window.fbLogout();
+    playerName = '';
+    highScores = { timer: 0, zen: 0 };
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerPassword').value = '';
+    nameStatus.textContent = '';
+    show('login');
+  });
+
   // ---------- MODE SELECT ----------
   document.getElementById('pickTimer').addEventListener('click', function(){
     mode = 'timer';
@@ -1211,6 +1265,28 @@ window.AudioEngine = (function(){
   document.getElementById('menuBtn').addEventListener('click', function(){
     show('mode');
   });
+
+  // ---------- RESTORE SESSION ON LOAD ----------
+  // Supabase keeps the session in the browser's own storage, so a page
+  // refresh (network blip, accidental reload, etc) doesn't have to mean
+  // logging in again — we just need to check for it before showing login.
+  (async function restoreSession(){
+    var waited = 0;
+    while(!window.fbReady && waited < 4000){
+      await new Promise(function(r){ setTimeout(r, 30); });
+      waited += 30;
+    }
+    if(!window.fbGetSession) return;
+    var profile = await window.fbGetSession();
+    if(profile){
+      playerName = profile.display_name;
+      highScores.timer = profile.timer_best || 0;
+      highScores.zen = profile.zen_best || 0;
+      document.getElementById('welcomeName').textContent = playerName;
+      renderBest();
+      show('mode');
+    }
+  })();
 
 })();
 </script>
