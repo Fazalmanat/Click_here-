@@ -20,7 +20,7 @@
       var bonusXP = isNewHigh ? 10 : 0;
       var earnedXP = baseXP + bonusXP;
 
-      var prevTotalXP = window.AppState.totalXP || 0;
+      var prevTotalXP = (typeof window.AppState.gameStartXP === 'number') ? window.AppState.gameStartXP : (window.AppState.totalXP || 0);
 
       if(isNewHigh){
         window.AppState.highScores[mode] = score;
@@ -31,6 +31,8 @@
 
       var newTotalXP = prevTotalXP + earnedXP;
       window.AppState.totalXP = newTotalXP;
+      window.AppState.gameStartXP = newTotalXP;
+
       if(window.AppState.playerName){
         try{ localStorage.setItem('clickhere_xp_' + window.AppState.playerName, window.AppState.totalXP); }catch(e){}
       }
@@ -53,10 +55,12 @@
 
       /* Calculate fill percentages for slider (within 50 XP level buckets) */
       var XP_PER_LEVEL = 50;
-      var prevPercent = ((prevTotalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
+      var prevPercent  = ((prevTotalXP % XP_PER_LEVEL) / XP_PER_LEVEL) * 100;
       var addedPercent = (earnedXP / XP_PER_LEVEL) * 100;
-      var targetWidth = Math.min(addedPercent, 100 - prevPercent);
-      if(targetWidth <= 0 && earnedXP > 0){ targetWidth = 100 - prevPercent; }
+      var visibleAdded = Math.max(addedPercent, earnedXP > 0 ? 8 : 0);
+      if(prevPercent + visibleAdded > 100){
+        visibleAdded = Math.max(100 - prevPercent, 3);
+      }
 
       if(baseFillEl && addedFillEl){
         baseFillEl.style.transition = 'none';
@@ -68,7 +72,7 @@
         requestAnimationFrame(function(){
           requestAnimationFrame(function(){
             addedFillEl.style.transition = 'width 1s cubic-bezier(.4,0,.2,1)';
-            addedFillEl.style.width = Math.max(targetWidth, 3).toFixed(1) + '%';
+            addedFillEl.style.width = visibleAdded.toFixed(1) + '%';
           });
         });
       }

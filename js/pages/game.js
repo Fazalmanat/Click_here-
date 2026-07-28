@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    game.js — gameplay: target, decoys, timer, disco colours
    ============================================================ */
 (function(){
@@ -178,6 +178,8 @@
   window.PageHandlers['game'] = {
     onShow: function(){
       score = 0;
+      window.AppState.score = 0;
+      window.AppState.gameStartXP = window.AppState.totalXP || 0;
       scoreValue.textContent = '0';
       timerBlock.classList.toggle('hidden', window.AppState.mode === 'zen');
       disco();

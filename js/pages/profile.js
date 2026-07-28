@@ -90,9 +90,9 @@
     var capNoteEl = document.getElementById('profileCapNote');
     if(capNoteEl){
       if(info.isCapped){
-        capNoteEl.textContent = '🔒 Level capped at ' + info.levelCap + '! Score > ' + info.levelCap + ' in Timer or > ' + (info.levelCap * 10) + ' in Zen to unlock LVL ' + (info.level + 1);
+        capNoteEl.textContent = '🔒 LEVEL CAP REACHED! Smash your High Score in Timer or Zen to break the limit & level up!';
       } else {
-        capNoteEl.textContent = 'Level Cap: ' + info.levelCap + ' (Timer: 1:1 cap | Zen: 10:1 cap)';
+        capNoteEl.textContent = '🔥 HIGHEST SCORE = MAX LEVEL! Score higher in Timer or Zen to raise your Level Cap!';
       }
     }
 
