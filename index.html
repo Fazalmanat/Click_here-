@@ -102,14 +102,17 @@
 
   .screen{
     position:absolute; inset:0;
-    display:none;
+    display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     padding:6vw;
     text-align:center;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease;
   }
-  .screen.active{ display:flex; }
+  .screen.active{ opacity:1; pointer-events:auto; }
 
   /* ---------- LOGIN ---------- */
   .logo{
@@ -893,6 +896,48 @@ window.AudioEngine = (function(){
   var highScores = { timer: 0, zen: 0 };
   var hasStorage = true;
 
+  // ---------- INACTIVITY LOGOUT ----------
+  // No absolute cutoff — just: if nothing has happened (no click/tap/key)
+  // for INACTIVITY_TIMEOUT_MS, log the player out. If their best score
+  // isn't in the top 10 of either leaderboard, their profile is also
+  // removed from Supabase as cleanup (requires a "delete own row" RLS
+  // policy — see setup notes near the Supabase client below).
+  var INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes idle — adjust as needed
+  var lastActivityAt = Date.now();
+  var inactivityCheckId = null;
+
+  function markActivity(){ lastActivityAt = Date.now(); }
+  ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(function(evt){
+    document.addEventListener(evt, markActivity, { passive: true });
+  });
+
+  async function doLogout(message){
+    if(inactivityCheckId){ clearInterval(inactivityCheckId); inactivityCheckId = null; }
+    stopClock();
+    if(window.fbLogout){ await window.fbLogout(); }
+    playerName = '';
+    highScores = { timer: 0, zen: 0 };
+    document.getElementById('playerName').value = '';
+    document.getElementById('playerPassword').value = '';
+    nameStatus.style.color = 'var(--ink-dim)';
+    nameStatus.textContent = message || '';
+    show('login');
+  }
+
+  async function handleInactivityTimeout(){
+    await doLogout('logged out due to inactivity');
+  }
+
+  function startInactivityWatch(){
+    lastActivityAt = Date.now();
+    if(inactivityCheckId){ clearInterval(inactivityCheckId); }
+    inactivityCheckId = setInterval(function(){
+      if(Date.now() - lastActivityAt > INACTIVITY_TIMEOUT_MS){
+        handleInactivityTimeout();
+      }
+    }, 60000);
+  }
+
   async function getLeaderboard(modeKey){
     return await window.fbGetLeaderboard(modeKey);
   }
@@ -1055,6 +1100,7 @@ window.AudioEngine = (function(){
     document.getElementById('welcomeName').textContent = playerName;
     renderBest();
     window.AudioEngine.startMusic();
+    startInactivityWatch();
     show('mode');
   });
   document.getElementById('playerName').addEventListener('keydown', function(e){
@@ -1065,13 +1111,7 @@ window.AudioEngine = (function(){
   });
 
   document.getElementById('logoutBtn').addEventListener('click', async function(){
-    await window.fbLogout();
-    playerName = '';
-    highScores = { timer: 0, zen: 0 };
-    document.getElementById('playerName').value = '';
-    document.getElementById('playerPassword').value = '';
-    nameStatus.textContent = '';
-    show('login');
+    await doLogout();
   });
 
   // ---------- MODE SELECT ----------
@@ -1293,6 +1333,7 @@ window.AudioEngine = (function(){
       highScores.zen = profile.zen_best || 0;
       document.getElementById('welcomeName').textContent = playerName;
       renderBest();
+      startInactivityWatch();
       show('mode');
     } else {
       show('login');
