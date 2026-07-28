@@ -1,416 +1,64 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Click here! — arcade button hunt</title>
-<meta name="description" content="Click 'here!'.It is hiding somewhere on screen. Catch it before time runs out.">
+<meta name="description" content="Click 'here!'. It is hiding somewhere on screen. Catch it before time runs out.">
 <meta property="og:title" content="Click here!">
-<meta property="og:description" content="Click 'here!'.It is hiding somewhere on screen. Catch it before time runs out.">
+<meta property="og:description" content="Click 'here!'. It is hiding somewhere on screen. Catch it before time runs out.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Click here!">
-<meta name="twitter:description" content="Click 'here!'.It is hiding somewhere on screen. Catch it before time runs out.">
+<meta name="twitter:description" content="Click 'here!'. It is hiding somewhere on screen. Catch it before time runs out.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#120c1e;
-    --panel:#1d1530;
-    --ink:#f5f0ff;
-    --ink-dim:#a89bc4;
-    --pink:#ff2e88;
-    --cyan:#00e5ff;
-    --amber:#ffcc00;
-    --frame-gap: 22px;
-    --disco-bg: var(--bg);
-    --disco-text: var(--pink);
-    --disco-stage: var(--panel);
-
-    --cyan-glow: rgba(0,229,255,.55);
-    --pink-glow: rgba(255,46,136,.55);
-    --card-bg: rgba(255,255,255,.03);
-    --card-border: rgba(255,255,255,.08);
-    --hairline: rgba(255,255,255,.12);
-    --hairline-soft: rgba(255,255,255,.1);
-    --shadow-soft: rgba(0,0,0,.55);
-    --btn-primary-ink:#1a0d16;
-  }
-  :root[data-theme="light"]{
-    --bg:#f5f2fb;
-    --panel:#ffffff;
-    --ink:#241a38;
-    --ink-dim:#6b6180;
-    --card-bg: rgba(20,10,40,.035);
-    --card-border: rgba(20,10,40,.12);
-    --hairline: rgba(20,10,40,.18);
-    --hairline-soft: rgba(20,10,40,.14);
-    --shadow-soft: rgba(20,10,40,.18);
-  }
-  @media (max-width: 640px){
-    :root{ --frame-gap: 10px; }
-  }
-
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select: none; }
-  html,body{
-    margin:0; padding:0; height:100%; overflow:hidden;
-    background:var(--bg);
-    font-family:'Space Grotesk', system-ui, sans-serif;
-    color:var(--ink);
-  }
-  .arcade{ font-family:'Press Start 2P', monospace; }
-
-  /* ---------- MARQUEE FRAME (signature element) ---------- */
-  #frame{
-    position:fixed; inset:0;
-    padding:var(--frame-gap);
-    background: var(--disco-bg);
-    border-radius: 26px;
-    transition: background .35s ease;
-  }
-  #frame::before{
-    content:""; position:absolute; inset:0;
-    padding:var(--frame-gap);
-    border-radius: 26px;
-    background:
-      repeating-linear-gradient(90deg,
-        var(--disco-text) 0 24px, transparent 24px 48px);
-    background-size: 200% 100%, 100% 200%, 100% 100%, 100% 100%;
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: chase 1.4s linear infinite;
-    opacity:.9;
-    pointer-events:none;
-    transition: background .35s ease;
-  }
-  @keyframes chase{ to{ background-position: -48px 0; } }
-
-  #stage{
-    position:relative;
-    height:100%; width:100%;
-    background:var(--disco-stage);
-    border-radius:18px;
-    overflow:hidden;
-    transition: background .35s ease;
-    box-shadow:
-      inset 0 0 0 2px rgba(255,255,255,.06),
-      0 0 60px rgba(0,0,0,.55);
-  }
-
-  .screen{
-    position:absolute; inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:6vw;
-    text-align:center;
-    opacity:0;
-    pointer-events:none;
-    transition: opacity .25s ease;
-  }
-  .screen.active{ opacity:1; pointer-events:auto; }
-
-  /* ---------- LOGIN ---------- */
-  .logo{
-    font-size: clamp(22px, 5vw, 40px);
-    color:var(--cyan);
-    text-shadow: 0 0 18px var(--cyan-glow);
-    margin: 0 0 8px;
-    letter-spacing:2px;
-  }
-  .logo span{ color:var(--pink); text-shadow:0 0 18px var(--pink-glow); }
-  .tagline{ color:var(--ink-dim); margin:0 0 34px; font-size:clamp(12px,2.4vw,15px); }
-
-  .card{
-    background:var(--card-bg);
-    border:1px solid var(--card-border);
-    border-radius:16px;
-    padding:32px 28px;
-    width:min(90vw, 380px);
-  }
-
-  input#playerName{
-    width:100%;
-    padding:14px 16px;
-    font-size:16px;
-    font-family:'Space Grotesk', sans-serif;
-    background:var(--bg);
-    border:2px solid var(--hairline);
-    border-radius:10px;
-    color:var(--ink);
-    outline:none;
-    margin-bottom:18px;
-  }
-  input#playerName:focus{ border-color:var(--cyan); }
-
-  button{
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:600;
-    cursor:pointer;
-    border:none;
-    outline:none;
-    -webkit-user-select:none;
-    user-select:none;
-  }
-
-  .btn-primary{
-    width:100%;
-    padding:14px 16px;
-    font-size:15px;
-    border-radius:10px;
-    background:var(--pink);
-    color:var(--btn-primary-ink);
-    box-shadow:0 6px 0 #a8155a, 0 8px 18px var(--pink-glow);
-    transition:transform .08s ease;
-  }
-  .btn-primary:active{ transform:translateY(6px); box-shadow:0 0 0 #a8155a; }
-
-  /* ---------- THEME TOGGLE ---------- */
-  #themeToggle{
-    position:fixed;
-    top: calc(var(--frame-gap) + 14px);
-    right: calc(var(--frame-gap) + 14px);
-    z-index:10;
-    width:44px; height:44px;
-    border-radius:50%;
-    background:var(--card-bg);
-    border:1px solid var(--card-border);
-    color:var(--ink);
-    font-size:18px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer;
-  }
-  body.in-game #themeToggle{ display:none; }
-
-  #muteToggle{
-    position:fixed;
-    top: calc(var(--frame-gap) + 14px);
-    right: calc(var(--frame-gap) + 14px + 58px);
-    z-index:10;
-    width:44px; height:44px;
-    border-radius:50%;
-    background:var(--card-bg);
-    border:1px solid var(--card-border);
-    color:var(--ink);
-    font-size:16px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer;
-  }
-  body.in-game #muteToggle{
-    right: calc(var(--frame-gap) + 14px);
-  }
-
-  /* ---------- MODE SELECT ---------- */
-  .mode-title{ font-size:clamp(16px,3vw,20px); color:var(--ink-dim); margin-bottom:22px; }
-  .best-line{ font-size:12px; color:var(--ink-dim); letter-spacing:1px; margin:-14px 0 22px; }
-  .new-high{
-    font-size:12px; letter-spacing:2px; color:var(--amber);
-    margin:0 0 6px; animation:pulse .6s infinite;
-  }
-  .modes{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center; max-width:640px; }
-  .mode-card{
-    width:230px; max-width:80vw;
-    background:var(--card-bg);
-    border:2px solid var(--hairline);
-    border-radius:16px;
-    padding:26px 20px;
-    text-align:left;
-    cursor:pointer;
-    transition:.15s ease;
-  }
-  .mode-card:hover, .mode-card:active{
-    border-color:var(--cyan);
-    transform:translateY(-4px);
-    background:var(--cyan-glow);
-  }
-  .mode-card h3{ margin:10px 0 6px; font-size:18px; color:var(--ink); }
-  .mode-card p{ margin:0; font-size:13px; color:var(--ink-dim); line-height:1.5; }
-  .mode-icon{ font-size:28px; }
-  .mode-card.zen:hover, .mode-card.zen:active{ border-color:var(--amber); background:rgba(184,134,11,.12); }
-
-  /* ---------- HUD ---------- */
-  #hud{
-    position:absolute; top:0; left:0; right:0;
-    display:flex; justify-content:space-between; align-items:flex-start;
-    padding: clamp(10px,2vw,20px) clamp(14px,3vw,26px);
-    z-index:5;
-    pointer-events:none;
-  }
-  body.in-game #hud{
-    padding-right: calc(clamp(14px,3vw,26px) + 56px);
-  }
-  .hud-block{ text-align:left; }
-  .hud-label{ font-size:10px; letter-spacing:2px; color:var(--ink-dim); margin:0 0 4px; }
-  .hud-value{ font-size:clamp(20px,5vw,30px); margin:0; color:var(--ink); }
-  #scoreValue{ color:var(--disco-text); transition: color .15s ease; }
-  #timerValue.warn{ color:var(--pink); animation:pulse .5s infinite; }
-  @keyframes pulse{ 50%{ opacity:.35; } }
-
-  #quitBtn{
-    pointer-events:all;
-    background:transparent;
-    color:var(--ink-dim);
-    border:1px solid var(--hairline-soft);
-    border-radius:8px;
-    padding:10px 12px;
-    font-size:9px;
-    letter-spacing:1px;
-  }
-  #quitBtn:active{ border-color:var(--pink); color:var(--pink); }
-
-  /* ---------- TARGET BUTTON ---------- */
-  #target{
-    position:absolute;
-    color:var(--disco-text);
-    background:transparent;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:400;
-    font-size: clamp(7px, 1vw, 9px);
-    line-height:1;
-    padding:1px 3px;
-    transition: color .15s ease;
-    cursor:default;
-  }
-  #target:active{ transform:scale(.92); }
-
-  @keyframes missBlink{
-    0%, 100%{
-      transform: scale(1);
-      background: transparent;
-      color: var(--disco-text);
-      box-shadow: none;
-    }
-    20%, 60%{
-      transform: scale(1.35);
-      background: var(--disco-text);
-      color: var(--disco-stage);
-      box-shadow: 0 0 0 6px var(--disco-text), 0 0 24px 8px var(--disco-text);
-    }
-    40%, 80%{
-      transform: scale(1);
-      background: transparent;
-      color: var(--disco-text);
-      box-shadow: none;
-    }
-  }
-  #target.missed{
-    animation: missBlink .8s steps(1, end) 1;
-    outline: 3px solid var(--disco-text);
-    outline-offset: 4px;
-    border-radius: 8px;
-    pointer-events: none;
-  }
-
-  .decoy{
-    position:absolute;
-    color:var(--disco-text);
-    background:transparent;
-    font-family:'Space Grotesk', sans-serif;
-    font-weight:400;
-    font-size: clamp(7px, 1vw, 9px);
-    line-height:1;
-    padding:1px 3px;
-    opacity:.85;
-    cursor: default;
-  }
-  .decoy:active{ transform:scale(.92); }
-
-  /* ---------- GAME OVER ---------- */
-  .final-score{
-    font-size:clamp(48px,12vw,84px);
-    color:var(--disco-text);
-    margin: 6px 0 2px;
-  }
-  .final-label{ color:var(--ink-dim); font-size:13px; letter-spacing:2px; margin-bottom:26px; }
-  .btn-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
-  .btn-secondary{
-    padding:12px 20px; border-radius:10px; font-size:13px;
-    background:transparent; color:var(--ink); border:2px solid var(--hairline-soft);
-  }
-
-  #bestLine{ margin:4px 0 26px; }
-
-  .lb-columns{
-    display:flex; gap:24px; justify-content:center; flex-wrap:wrap;
-    max-height:44vh; overflow-y:auto;
-    width:min(90vw, 460px);
-  }
-  .lb-col{ flex:1; min-width:140px; text-align:left; }
-  .lb-col h4{
-    margin:0 0 10px; font-size:12px; letter-spacing:2px;
-    color:var(--ink-dim); text-transform:uppercase;
-  }
-  .lb-col ol{
-    list-style:decimal; margin:0; padding-left:20px;
-    display:flex; flex-direction:column; gap:6px;
-  }
-  .lb-col li{ font-size:13px; color:var(--ink); }
-  .lb-col li.lb-empty{ color:var(--ink-dim); list-style:none; margin-left:-20px; }
-  .lb-col li.lb-me{
-    color:var(--amber);
-    font-weight:600;
-  }
-  .lb-col li.lb-me::marker{ color:var(--amber); }
-
-  .hidden{ display:none !important; }
-
-  @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
-</style>
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<button id="themeToggle" aria-label="Toggle light and dark mode">🌙</button>
-<button id="muteToggle" aria-label="Toggle sound">🔊</button>
-
-<!-- ============================================================
-     AUDIO FILES
-     Drop your own files at these paths (relative to this HTML file),
-     or change the paths below to point wherever you host them:
-
-       sounds/bgm1.mp3        — background music, track 1 of 3
-       sounds/bgm2.mp3        — background music, track 2 of 3
-       sounds/bgm3.mp3        — background music, track 3 of 3
-       sounds/hit.mp3         — played when you tap the target
-       sounds/miss.mp3        — played when you tap a decoy
-       sounds/blink.mp3       — played when the target blinks at round end
-       sounds/timer-beep.mp3  — played each of the last 3 seconds (Timer mode)
-       sounds/game-over.mp3   — played when a round ends
-
-     Background music plays through this <audio> element and shuffles
-     between the three bgm tracks. The four short sound effects are
-     fetched and decoded into memory by the script below (Web Audio
-     buffers) rather than using <audio> tags, so they trigger instantly
-     on click instead of re-loading a file every time. If a file is
-     missing, that sound will just silently fail to play — nothing
-     else breaks.
-     ============================================================ -->
 <audio id="bgMusic" preload="auto"></audio>
 
 <div id="frame">
   <div id="stage">
 
-    <!-- LOADING -->
+    <!-- ======== TOP NAV BAR ======== -->
+    <nav id="topNav">
+      <div class="nav-left">
+        <button class="nav-btn" id="navLeaderboardBtn" aria-label="Leaderboard">
+          🏆 <span class="nav-label">Leaderboard</span>
+        </button>
+        <button class="nav-btn icon-only" id="themeToggle" aria-label="Toggle theme">🌙</button>
+        <button class="nav-btn icon-only" id="muteToggle"  aria-label="Toggle sound">🔊</button>
+      </div>
+      <div class="nav-right">
+        <button class="nav-btn" id="navProfileBtn" aria-label="Profile">
+          👤 <span class="nav-label">Profile</span>
+        </button>
+        <button class="nav-btn" id="navLogoutBtn" aria-label="Log out">
+          🚪 <span class="nav-label">Logout</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ======== LOADING ======== -->
     <section class="screen active" id="screen-loading">
-      <p class="logo arcade" style="font-size:clamp(16px,4vw,28px); opacity:.7; animation:pulse 1.1s infinite;">LOADING…</p>
+      <p class="logo arcade" style="font-size:clamp(16px,4vw,28px);opacity:.7;animation:pulse 1.1s infinite;">LOADING…</p>
     </section>
 
-    <!-- LOGIN -->
+    <!-- ======== LOGIN ======== -->
     <section class="screen" id="screen-login">
       <h1 class="logo arcade">CLICK <span>"here!"</span></h1>
-      <p class="tagline">Just Click 'here!'.It is hiding somewhere on screen. catch it.</p>
+      <p class="tagline">Just Click 'here!'. It is hiding somewhere on screen. catch it.</p>
       <div class="card">
-        <input id="playerName" type="text" placeholder="enter your name" maxlength="16" autocomplete="off">
-        <input id="playerPassword" type="password" placeholder="password (min 6 chars)" maxlength="64" autocomplete="off" style="width:100%; padding:14px 16px; font-size:16px; font-family:'Space Grotesk', sans-serif; background:var(--bg); border:2px solid var(--hairline); border-radius:10px; color:var(--ink); outline:none; margin-bottom:18px;">
-        <p id="nameStatus" style="font-size:12px; margin:-12px 0 14px; min-height:14px; color:var(--pink);"></p>
-        <button class="btn-primary arcade" style="font-size:12px;" id="loginBtn">PLAY →</button>
+        <input id="playerName"     class="input-field" type="text"     placeholder="enter your name"         maxlength="16" autocomplete="off">
+        <input id="playerPassword" class="input-field" type="password" placeholder="password (min 6 chars)"  maxlength="64" autocomplete="off">
+        <p id="nameStatus"></p>
+        <button class="btn-primary arcade" id="loginBtn" style="font-size:12px;">PLAY →</button>
       </div>
     </section>
 
-    <!-- MODE SELECT -->
+    <!-- ======== MODE SELECT ======== -->
     <section class="screen" id="screen-mode">
       <p class="mode-title">welcome, <span id="welcomeName" style="color:var(--cyan)"></span> — pick a mode</p>
       <p class="best-line" id="bestScores"></p>
@@ -426,17 +74,11 @@
           <p>No clock, no pressure. Click at your own pace and watch the colors drift.</p>
         </div>
       </div>
-      <button class="btn-secondary" id="viewLeaderboardBtn" style="margin-top:22px; font-size:11px;">🏆 Leaderboard</button>
-      <button class="btn-secondary" id="logoutBtn" style="margin-top:12px; font-size:11px;">Log out</button>
     </section>
 
-    <!-- LEADERBOARD -->
+    <!-- ======== LEADERBOARD ======== -->
     <section class="screen" id="screen-leaderboard">
-      <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; width:min(90vw, 460px);">
-        <span></span>
-        <p class="mode-title arcade" style="font-size:14px; margin:0;">LEADERBOARD</p>
-        <button class="btn-secondary" id="lbRefreshBtn" style="font-size:11px; padding:8px 12px; justify-self:start;" aria-label="Refresh leaderboard">⟳</button>
-      </div>
+      <p class="mode-title arcade" style="font-size:14px;margin-bottom:18px;">LEADERBOARD</p>
       <div class="lb-columns">
         <div class="lb-col">
           <h4>Timer</h4>
@@ -447,11 +89,13 @@
           <ol id="lbZenList"></ol>
         </div>
       </div>
-      <p class="best-line" id="lbNote" style="margin-top:16px;">shared across everyone playing this game</p>
-      <button class="btn-secondary" id="lbBackBtn">Back to modes</button>
+      <p class="best-line" id="lbNote" style="margin-top:14px;margin-bottom:4px;">shared across everyone playing this game</p>
+      <button class="btn-secondary" id="lbRefreshBtn" aria-label="Refresh leaderboard">
+        <span class="lb-refresh-icon" style="display:inline-block;">⟳</span> Refresh
+      </button>
     </section>
 
-    <!-- GAME -->
+    <!-- ======== GAME ======== -->
     <section class="screen" id="screen-game">
       <div id="hud">
         <div class="hud-block">
@@ -462,12 +106,15 @@
           <p class="hud-label">TIME</p>
           <p class="hud-value arcade" id="timerValue">10.0</p>
         </div>
-        <button id="quitBtn" class="arcade">GIVE UP</button>
+        <div class="hud-controls">
+          <button id="hudMuteBtn">🔊</button>
+          <button id="quitBtn" class="arcade">GIVE UP</button>
+        </div>
       </div>
       <button id="target">Here!</button>
     </section>
 
-    <!-- GAME OVER (timer mode) -->
+    <!-- ======== GAME OVER ======== -->
     <section class="screen" id="screen-over">
       <p class="final-label arcade" style="font-size:11px;" id="overLabel">TIME'S UP</p>
       <p class="new-high hidden" id="newHighBadge">★ NEW HIGH SCORE ★</p>
@@ -475,872 +122,129 @@
       <p class="final-label">rounds cleared</p>
       <p class="best-line" id="bestLine"></p>
       <div class="btn-row">
-        <button class="btn-primary arcade" style="font-size:11px; width:auto; padding:14px 22px;" id="retryBtn">RETRY</button>
+        <button class="btn-primary arcade" style="font-size:11px;width:auto;padding:14px 22px;" id="retryBtn">RETRY</button>
         <button class="btn-secondary" id="menuBtn">Back to modes</button>
       </div>
     </section>
 
-  </div>
-</div>
+    <!-- ======== PROFILE ======== -->
+    <section class="screen" id="screen-profile">
+      <div class="profile-card">
+        <div class="avatar-wrap">
+          <div class="avatar" id="profileAvatar">?</div>
+          <div class="level-badge" id="profileLevelBadge">LVL 1</div>
+        </div>
+        <h2 class="profile-name" id="profileName"></h2>
+        <p  class="profile-rank" id="profileRank">Rookie</p>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar-track"><div class="xp-bar-fill" id="xpBarFill"></div></div>
+          <div class="xp-bar-labels">
+            <span id="xpCurrent">0 XP</span>
+            <span id="xpNext">Next: 50 XP</span>
+          </div>
+        </div>
+        <div class="profile-stats">
+          <div class="stat-block">
+            <p class="stat-label">TIMER<br>BEST</p>
+            <p class="stat-value" id="profileTimerBest">0</p>
+          </div>
+          <div class="stat-block">
+            <p class="stat-label">ZEN<br>BEST</p>
+            <p class="stat-value" id="profileZenBest">0</p>
+          </div>
+          <div class="stat-block">
+            <p class="stat-label">TOTAL<br>XP</p>
+            <p class="stat-value" id="profileTotalXP">0</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /stage -->
+</div><!-- /frame -->
 
 <!-- ============================================================
-     SUPABASE SETUP (using Supabase Auth)
-     1. Create a project at https://supabase.com/dashboard
-
-     2. Authentication > Providers > Email > turn OFF "Confirm email".
-        This game signs people up with a made-up address built from
-        their username (there's no real inbox behind it), so email
-        confirmation links would never arrive — this has to be off.
-
-     3. SQL Editor > run this. It creates a public profile row for each
-        auth user, holding their display name and best scores. Row
-        Level Security means a player can only ever insert/update their
-        own row — Supabase Auth handles all password hashing/checking
-        internally, so none of that lives in this app's code anymore:
-
-        create table profiles (
-          id uuid primary key references auth.users(id) on delete cascade,
-          display_name text not null,
-          timer_best int not null default 0,
-          zen_best int not null default 0,
-          updated_at timestamptz not null default now()
-        );
-
-        alter table profiles enable row level security;
-        create policy "public read"    on profiles for select using (true);
-        create policy "insert own row" on profiles for insert with check (auth.uid() = id);
-        create policy "update own row" on profiles for update using (auth.uid() = id);
-
-        Uniqueness comes for free: Supabase Auth already enforces one
-        account per email, and each account maps to exactly one
-        username via the fake address below — so two people can't
-        register the same username.
-
-     4. Project settings > API > copy the "Project URL" and "anon public"
-        key into the placeholders below.
+     APP STATE + SCREEN ROUTER
+     Must run before all other scripts.
      ============================================================ -->
-<script type="module">
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-  var SUPABASE_URL = "https://noudibszgylmzoynqfqd.supabase.co";
-  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdWRpYnN6Z3lsbXpveW5xZnFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMzIxOTksImV4cCI6MjEwMDcwODE5OX0.I1O0G4R383N5PbmLjf9gh-gr-UVFVGIvKiG9xJCyF9g";
-
-  var supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // Supabase Auth wants an email — we synthesize one from the username so
-  // the login screen can stay "name + password" with no email field.
-  function emailFor(username){
-    return username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '_') + '@players.local';
-  }
-
-  async function loadProfile(userId){
-    var res = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if(res.error){ console.error('profile load failed', res.error); return null; }
-    return res.data;
-  }
-
-  // Logs in if the account exists (Supabase checks the password), or
-  // creates a brand-new one if it doesn't.
-  // Returns { ok: true, row } or { ok: false, reason: 'bad_password' | 'short' | 'error' }.
-  window.fbLoginOrRegister = async function(username, password){
-    var email = emailFor(username);
-    try{
-      var signIn = await supabase.auth.signInWithPassword({ email: email, password: password });
-
-      if(!signIn.error){
-        var profile = await loadProfile(signIn.data.user.id);
-        return profile ? { ok: true, row: profile } : { ok: false, reason: 'error' };
-      }
-
-      // No matching account (or wrong password) — try creating one.
-      // If one already exists, signUp will tell us and we treat that
-      // as "wrong password" since sign-in already failed.
-      var signUp = await supabase.auth.signUp({ email: email, password: password });
-
-      if(signUp.error){
-        var msg = signUp.error.message || '';
-        if(/already registered|already exists/i.test(msg)) return { ok: false, reason: 'bad_password' };
-        if(/password/i.test(msg)) return { ok: false, reason: 'short' };
-        console.error('signUp failed', signUp.error);
-        return { ok: false, reason: 'error' };
-      }
-
-      if(!signUp.data.session){
-        // No session back means email confirmation is still required —
-        // see step 2 in the setup notes above.
-        console.error('No session after signUp — is "Confirm email" turned off?');
-        return { ok: false, reason: 'error' };
-      }
-
-      var created = await supabase.from('profiles').insert({
-        id: signUp.data.user.id,
-        display_name: username
-      }).select().single();
-
-      if(created.error){
-        console.error('profile insert failed', created.error);
-        return { ok: false, reason: 'error' };
-      }
-
-      return { ok: true, row: created.data };
-    }catch(e){
-      console.error('Supabase auth failed', e);
-      return { ok: false, reason: 'error' };
-    }
-  };
-
-  window.fbGetLeaderboard = async function(modeKey){
-    var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
-    try{
-      var res = await supabase.from('profiles').select('display_name,' + col).order(col, { ascending: false }).limit(10);
-      if(res.error) throw res.error;
-      return res.data.map(function(row){ return { name: row.display_name, score: row[col] }; });
-    }catch(e){
-      console.error('Supabase leaderboard read failed', e);
-      return [];
-    }
-  };
-
-  window.fbSubmitScore = async function(modeKey, score){
-    var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
-    try{
-      var userRes = await supabase.auth.getUser();
-      if(userRes.error || !userRes.data.user) return;
-      var userId = userRes.data.user.id;
-
-      var current = await supabase.from('profiles').select(col).eq('id', userId).single();
-      if(current.error) throw current.error;
-
-      if(score > current.data[col]){
-        var patch = {}; patch[col] = score; patch.updated_at = new Date().toISOString();
-        await supabase.from('profiles').update(patch).eq('id', userId);
-      }
-    }catch(e){
-      console.error('Supabase leaderboard write failed', e);
-    }
-  };
-
-  window.fbGetSession = async function(){
-    try{
-      var sessionRes = await supabase.auth.getSession();
-      if(sessionRes.error || !sessionRes.data.session) return null;
-      return await loadProfile(sessionRes.data.session.user.id);
-    }catch(e){
-      console.error('session check failed', e);
-      return null;
-    }
-  };
-
-  window.fbLogout = async function(){
-    try{
-      await supabase.auth.signOut();
-    }catch(e){
-      console.error('logout failed', e);
-    }
-  };
-
-  window.fbReady = true;
-</script>
-
 <script>
-// ---------- AUDIO ENGINE ----------
-// Background music: plain <audio> element (fine for a long continuous track).
-// One-shot SFX: decoded into Web Audio buffers ahead of time and played via
-// AudioBufferSourceNode — cloning an <audio> element and calling play() on
-// it has to re-buffer the file from scratch every single time, which is
-// exactly what caused the click-to-sound delay. Playing from an already-
-// decoded buffer is effectively instant.
-window.AudioEngine = (function(){
-  var muted = false;
-  try{
-    var savedMute = localStorage.getItem('find-it-muted');
-    if(savedMute === '1'){ muted = true; }
-  }catch(e){ /* ignore */ }
-
-  var musicEl = document.getElementById('bgMusic');
-  if(musicEl){ musicEl.volume = 0.35; musicEl.muted = muted; }
-
-  var BGM_TRACKS = ['sounds/bgm1.mp3', 'sounds/bgm2.mp3', 'sounds/bgm3.mp3'];
-  var lastTrackIdx = -1;
-  var musicStarted = false;
-
-  function pickTrackIdx(){
-    if(BGM_TRACKS.length <= 1) return 0;
-    var idx;
-    do{ idx = Math.floor(Math.random() * BGM_TRACKS.length); }
-    while(idx === lastTrackIdx);
-    return idx;
-  }
-
-  function playRandomTrack(){
-    if(!musicEl) return;
-    var idx = pickTrackIdx();
-    lastTrackIdx = idx;
-    musicEl.src = BGM_TRACKS[idx];
-    musicEl.load();
-    var p = musicEl.play();
-    if(p && typeof p.catch === 'function'){
-      p.catch(function(e){
-        console.error('BGM play() failed:', e);
-        musicStarted = false; // let a later, valid gesture retry
-      });
-    }
-  }
-
-  if(musicEl){
-    // When one track ends, shuffle to another rather than looping the
-    // same file — only while music is actually meant to be playing.
-    musicEl.addEventListener('ended', function(){
-      if(musicStarted){ playRandomTrack(); }
-    });
-  }
-
-  function startMusic(){
-    if(!musicEl || musicStarted) return;
-    musicStarted = true;
-    playRandomTrack();
-  }
-  function stopMusic(){
-    musicStarted = false;
-    if(musicEl){ musicEl.pause(); }
-  }
-
-  // Mobile OSes pause background <audio> when the screen locks or the app
-  // is backgrounded. Nothing fires a fresh "user gesture" when we come
-  // back, so without this the track would just silently stay paused —
-  // this resumes it automatically as soon as the tab is visible again.
-  document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible' && musicStarted && musicEl && musicEl.paused){
-      musicEl.play().catch(function(e){
-        console.error('BGM resume on visibility failed:', e);
-        musicStarted = false; // let the next tap re-trigger startMusic()
-      });
-    }
-  });
-  window.addEventListener('pageshow', function(){
-    if(musicStarted && musicEl && musicEl.paused){
-      musicEl.play().catch(function(e){
-        console.error('BGM resume on pageshow failed:', e);
-        musicStarted = false;
-      });
-    }
-  });
-
-  // ---- Web Audio buffer playback for SFX (low-latency) ----
-  var ctx = null;
-  var buffers = {}; // name -> AudioBuffer, once decoded
-
-  function ensureCtx(){
-    if(!ctx){
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if(!Ctx) return null;
-      ctx = new Ctx();
-    }
-    if(ctx.state === 'suspended'){ ctx.resume(); }
-    return ctx;
-  }
-
-  function loadBuffer(name, url){
-    var c = ensureCtx();
-    if(!c) return;
-    fetch(url)
-      .then(function(res){ return res.arrayBuffer(); })
-      .then(function(data){ return c.decodeAudioData(data); })
-      .then(function(decoded){ buffers[name] = decoded; })
-      .catch(function(){ /* file missing or couldn't decode — that SFX just won't play */ });
-  }
-
-  function playBuffer(name, playbackRate){
-    if(muted) return;
-    var c = ensureCtx();
-    var buf = buffers[name];
-    if(!c || !buf) return;
-    var source = c.createBufferSource();
-    var gain = c.createGain();
-    source.buffer = buf;
-    source.playbackRate.value = playbackRate || 1;
-    gain.gain.value = 0.6;
-    source.connect(gain);
-    gain.connect(c.destination);
-    source.start(0);
-  }
-
-  function hitSound(){ playBuffer('hit'); }
-  function missSound(){ playBuffer('miss'); }
-  function timerBeep(urgent){ playBuffer('beep', urgent ? 1.25 : 1); }
-  function gameOverSound(){ playBuffer('over'); }
-  function blinkSound(){ playBuffer('blink'); }
-
-  function setMuted(v){
-    muted = v;
-    try{ localStorage.setItem('find-it-muted', muted ? '1' : '0'); }catch(e){ /* ignore */ }
-    if(musicEl){ musicEl.muted = muted; }
-  }
-  function isMuted(){ return muted; }
-
-  // Kick off decoding immediately so buffers are ready well before the
-  // first click — ensureCtx() itself is a no-op until a user gesture
-  // resumes the context, but fetch+decode can happen in the background
-  // regardless.
-  loadBuffer('hit', 'sounds/hit.mp3');
-  loadBuffer('miss', 'sounds/miss.mp3');
-  loadBuffer('beep', 'sounds/timer-beep.mp3');
-  loadBuffer('over', 'sounds/game-over.mp3');
-  loadBuffer('blink', 'sounds/blink.mp3');
-
-  return {
-    hitSound: hitSound,
-    missSound: missSound,
-    timerBeep: timerBeep,
-    gameOverSound: gameOverSound,
-    blinkSound: blinkSound,
-    startMusic: startMusic,
-    stopMusic: stopMusic,
-    setMuted: setMuted,
-    isMuted: isMuted,
-    ensureCtx: ensureCtx
+  /* Shared in-memory state (survives screen transitions, no reload) */
+  window.AppState = {
+    playerName: '',
+    highScores:  { timer: 0, zen: 0 },
+    mode:        'timer',
+    score:       0,
+    _overLabel:  "TIME'S UP"
   };
-})();
 
-(function(){
-  var muteBtn = document.getElementById('muteToggle');
-  function render(){ muteBtn.textContent = window.AudioEngine.isMuted() ? '🔇' : '🔊'; }
-  render();
-  muteBtn.addEventListener('click', function(){
-    window.AudioEngine.ensureCtx();
-    window.AudioEngine.setMuted(!window.AudioEngine.isMuted());
-    render();
-  });
+  /* Each page script registers onShow / onHide callbacks here */
+  window.PageHandlers = {};
 
-  // Browsers require a real user gesture before audio can play — start
-  // the music the moment the person interacts with the page at all
-  // (typing, clicking, tapping), so it's already going by the time
-  // they're done logging in rather than only starting afterward.
-  // Only listen on events browsers actually treat as a valid gesture for
-  // unlocking autoplay (click, touchend, keydown, mouseup). pointerdown
-  // and touchstart are deliberately excluded — a touch could just be the
-  // start of a scroll, so browsers don't count it, and firing our attempt
-  // on it too early would waste the one "gesture window" before the real
-  // tap (touchend/click) ever happens.
-  function firstGesture(){
-    window.AudioEngine.ensureCtx();
-    window.AudioEngine.startMusic();
-  }
-  ['touchend', 'click', 'keydown', 'mouseup'].forEach(function(evt){
-    document.addEventListener(evt, firstGesture, { once: true, passive: true });
-  });
-})();
-</script>
-
-<script>
-(function(){
-  var root = document.documentElement;
-  var toggle = document.getElementById('themeToggle');
-  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-  var theme = prefersLight ? 'light' : 'dark';
-  function applyTheme(){
-    root.setAttribute('data-theme', theme);
-    toggle.textContent = theme === 'light' ? '☀️' : '🌙';
-  }
-  applyTheme();
-  toggle.addEventListener('click', function(){
-    theme = theme === 'light' ? 'dark' : 'light';
-    applyTheme();
-  });
-})();
-
-(function(){
-  var screens = {
-    loading: document.getElementById('screen-loading'),
-    login: document.getElementById('screen-login'),
-    mode:  document.getElementById('screen-mode'),
-    game:  document.getElementById('screen-game'),
-    over:  document.getElementById('screen-over'),
-    leaderboard: document.getElementById('screen-leaderboard')
-  };
-  var lbAutoRefreshId = null;
-  function show(name){
-    Object.keys(screens).forEach(function(k){
-      screens[k].classList.toggle('active', k === name);
-    });
-    document.body.classList.toggle('in-game', name === 'game' || name === 'over');
-    if(name === 'login' || name === 'mode' || name === 'leaderboard' || name === 'loading'){
-      document.documentElement.style.removeProperty('--disco-bg');
-      document.documentElement.style.removeProperty('--disco-stage');
-      document.documentElement.style.removeProperty('--disco-text');
+  /* Screen router */
+  (function(){
+    var _sc = null;
+    function getScreens(){
+      if(!_sc) _sc = {
+        loading:     document.getElementById('screen-loading'),
+        login:       document.getElementById('screen-login'),
+        mode:        document.getElementById('screen-mode'),
+        game:        document.getElementById('screen-game'),
+        over:        document.getElementById('screen-over'),
+        leaderboard: document.getElementById('screen-leaderboard'),
+        profile:     document.getElementById('screen-profile')
+      };
+      return _sc;
     }
-    if(name === 'leaderboard'){
-      if(lbAutoRefreshId){ clearInterval(lbAutoRefreshId); }
-      lbAutoRefreshId = setInterval(renderLeaderboard, 8000);
-    } else if(lbAutoRefreshId){
-      clearInterval(lbAutoRefreshId);
-      lbAutoRefreshId = null;
-    }
-  }
 
-  // The game is mouse/tap-only — make sure a keyboard-focused button
-  // (e.g. the target, right after it's clicked) can never be triggered
-  // by Enter/Space while actually playing.
-  document.addEventListener('keydown', function(e){
-    if(screens.game.classList.contains('active') && (e.key === 'Enter' || e.key === ' ')){
-      e.preventDefault();
-    }
-  });
+    window.showScreen = function(name){
+      var sc = getScreens();
 
-  var playerName = '';
-  var mode = 'timer'; // 'timer' | 'zen'
-  var score = 0;
-  var round = 0;
-  var timerId = null;
-  var timeLeft = 5.0;
-  var highScores = { timer: 0, zen: 0 };
-  var hasStorage = true;
+      /* Call onHide for current active screen */
+      Object.keys(sc).forEach(function(k){
+        if(sc[k].classList.contains('active') && window.PageHandlers[k] && window.PageHandlers[k].onHide){
+          window.PageHandlers[k].onHide();
+        }
+      });
 
-  // ---------- INACTIVITY LOGOUT ----------
-  // No absolute cutoff — just: if nothing has happened (no click/tap/key)
-  // for INACTIVITY_TIMEOUT_MS, log the player out. If their best score
-  // isn't in the top 10 of either leaderboard, their profile is also
-  // removed from Supabase as cleanup (requires a "delete own row" RLS
-  // policy — see setup notes near the Supabase client below).
-  var INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes idle — adjust as needed
-  var lastActivityAt = Date.now();
-  var inactivityCheckId = null;
+      /* Switch screens */
+      Object.keys(sc).forEach(function(k){
+        sc[k].classList.toggle('active', k === name);
+      });
 
-  function markActivity(){ lastActivityAt = Date.now(); }
-  ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(function(evt){
-    document.addEventListener(evt, markActivity, { passive: true });
-  });
+      var inGame = (name === 'game');
+      document.body.classList.toggle('in-game', inGame || name === 'over');
 
-  async function doLogout(message){
-    if(inactivityCheckId){ clearInterval(inactivityCheckId); inactivityCheckId = null; }
-    stopClock();
-    if(window.fbLogout){ await window.fbLogout(); }
-    playerName = '';
-    highScores = { timer: 0, zen: 0 };
-    document.getElementById('playerName').value = '';
-    document.getElementById('playerPassword').value = '';
-    nameStatus.style.color = 'var(--ink-dim)';
-    nameStatus.textContent = message || '';
-    show('login');
-  }
-
-  async function handleInactivityTimeout(){
-    await doLogout('logged out due to inactivity');
-  }
-
-  function startInactivityWatch(){
-    lastActivityAt = Date.now();
-    if(inactivityCheckId){ clearInterval(inactivityCheckId); }
-    inactivityCheckId = setInterval(function(){
-      if(Date.now() - lastActivityAt > INACTIVITY_TIMEOUT_MS){
-        handleInactivityTimeout();
+      /* Clear disco vars on non-game screens */
+      if(name !== 'game' && name !== 'over'){
+        document.documentElement.style.removeProperty('--disco-bg');
+        document.documentElement.style.removeProperty('--disco-stage');
+        document.documentElement.style.removeProperty('--disco-text');
       }
-    }, 60000);
-  }
 
-  async function getLeaderboard(modeKey){
-    return await window.fbGetLeaderboard(modeKey);
-  }
+      /* Update nav state */
+      if(window.updateNav){ window.updateNav(name); }
 
-  async function submitScore(modeKey, s){
-    await window.fbSubmitScore(modeKey, s);
-  }
-
-  function renderList(elId, list){
-    var el = document.getElementById(elId);
-    el.innerHTML = '';
-    if(!list.length){
-      var li = document.createElement('li');
-      li.textContent = hasStorage ? 'No scores yet' : 'Leaderboard unavailable here';
-      li.className = 'lb-empty';
-      el.appendChild(li);
-      return;
-    }
-    list.forEach(function(entry){
-      var li = document.createElement('li');
-      li.textContent = entry.name + ' — ' + entry.score;
-      if(entry.name === playerName){ li.className = 'lb-me'; }
-      el.appendChild(li);
-    });
-  }
-
-  async function renderLeaderboard(){
-    var timerList = await getLeaderboard('timer');
-    var zenList = await getLeaderboard('zen');
-    renderList('lbTimerList', timerList);
-    renderList('lbZenList', zenList);
-  }
-
-  document.getElementById('viewLeaderboardBtn').addEventListener('click', async function(){
-    show('leaderboard');
-    await renderLeaderboard();
-  });
-  var lbRefreshBtn = document.getElementById('lbRefreshBtn');
-  lbRefreshBtn.addEventListener('click', async function(){
-    lbRefreshBtn.disabled = true;
-    lbRefreshBtn.style.animation = 'spin .6s linear infinite';
-    await renderLeaderboard();
-    lbRefreshBtn.style.animation = '';
-    lbRefreshBtn.disabled = false;
-  });
-  document.getElementById('lbBackBtn').addEventListener('click', function(){
-    show('mode');
-  });
-
-  var target = document.getElementById('target');
-  var decoys = [];
-  var DECOY_CHANCE = 0.35;
-  var stage = document.getElementById('stage');
-  var scoreValue = document.getElementById('scoreValue');
-  var timerValue = document.getElementById('timerValue');
-  var timerBlock = document.getElementById('timerBlock');
-
-  // ---- disco color helper (kept from the original concept) ----
-  function randColor(min, max){
-    var span = max - min;
-    var x = Math.trunc(Math.random()*span) + min;
-    var y = Math.trunc(Math.random()*span) + min;
-    var z = Math.trunc(Math.random()*span) + min;
-    return { x:x, y:y, z:z };
-  }
-  function disco(){
-    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    var c, bg, stageBg, textC;
-    if(isLight){
-      var hue = Math.trunc(Math.random() * 360);
-      var sat = 60 + Math.trunc(Math.random() * 30);      // 60-90%, keeps hues vivid not washed out
-      var light = 78 + Math.trunc(Math.random() * 12);    // 78-90%, still pale enough to read text on
-      bg = 'hsla(' + hue + ',' + sat + '%,' + light + '%,0.92)';
-      stageBg = 'hsl(' + hue + ',' + sat + '%,' + light + '%)';
-      var textHue = (hue + 180) % 360;                    // complementary hue for a color-matched but readable contrast
-      textC = 'hsl(' + textHue + ',' + sat + '%,28%)';
-    } else {
-      c = randColor(0, 256);
-      bg = 'rgba('+c.x+','+c.y+','+c.z+',0.85)';
-      stageBg = 'rgb('+c.x+','+c.y+','+c.z+')';
-      textC = 'rgba('+Math.min(c.z+40,255)+','+c.x+','+c.y+',1)';
-    }
-    document.documentElement.style.setProperty('--disco-bg', bg);
-    document.documentElement.style.setProperty('--disco-text', textC);
-    document.documentElement.style.setProperty('--disco-stage', stageBg);
-  }
-
-  function safeTopOffset(){
-    var stageRect = stage.getBoundingClientRect();
-    var hud = document.getElementById('hud');
-    var mute = document.getElementById('muteToggle');
-    var quit = document.getElementById('quitBtn');
-    var bottoms = [hud, mute, quit].filter(Boolean).map(function(el){
-      return el.getBoundingClientRect().bottom;
-    });
-    var maxBottom = Math.max.apply(null, bottoms);
-    return Math.max(maxBottom - stageRect.top, 0) + 12;
-  }
-
-  function placeTarget(){
-    var rect = stage.getBoundingClientRect();
-    var tw = target.offsetWidth || 140;
-    var th = target.offsetHeight || 110;
-    var topOffset = safeTopOffset();
-    var maxX = Math.max(rect.width - tw - 10, 10);
-    var maxY = Math.max(rect.height - th - topOffset - 10, 10);
-    var x = Math.trunc(Math.random() * maxX) + 5;
-    var y = Math.trunc(Math.random() * maxY) + topOffset;
-    target.style.left = x + 'px';
-    target.style.top = y + 'px';
-  }
-
-  function renderBest(){
-    var el = document.getElementById('bestScores');
-    if(el){ el.textContent = 'Best — Timer: ' + highScores.timer + ' · Zen: ' + highScores.zen; }
-  }
-
-  // ---------- LOGIN ----------
-  var loginBtn = document.getElementById('loginBtn');
-  var nameStatus = document.getElementById('nameStatus');
-
-  document.getElementById('loginBtn').addEventListener('click', async function(){
-    var name = document.getElementById('playerName').value.trim();
-    var password = document.getElementById('playerPassword').value;
-
-    if(!name){
-      nameStatus.style.color = 'var(--pink)';
-      nameStatus.textContent = 'enter a name first';
-      return;
-    }
-    if(!password){
-      nameStatus.style.color = 'var(--pink)';
-      nameStatus.textContent = 'enter a password';
-      return;
-    }
-
-    loginBtn.disabled = true;
-    nameStatus.style.color = 'var(--ink-dim)';
-    nameStatus.textContent = 'checking…';
-
-    var result = await window.fbLoginOrRegister(name, password);
-
-    loginBtn.disabled = false;
-
-    if(!result.ok){
-      nameStatus.style.color = 'var(--pink)';
-      nameStatus.textContent = {
-        bad_password: 'wrong password for that username',
-        short: 'password needs to be at least 6 characters',
-        error: "couldn't reach the leaderboard — try again"
-      }[result.reason] || "couldn't reach the leaderboard — try again";
-      return;
-    }
-
-    nameStatus.textContent = '';
-    playerName = result.row.display_name;
-    highScores.timer = result.row.timer_best || 0;
-    highScores.zen = result.row.zen_best || 0;
-
-    document.getElementById('welcomeName').textContent = playerName;
-    renderBest();
-    window.AudioEngine.startMusic();
-    startInactivityWatch();
-    show('mode');
-  });
-  document.getElementById('playerName').addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ document.getElementById('loginBtn').click(); }
-  });
-  document.getElementById('playerPassword').addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ document.getElementById('loginBtn').click(); }
-  });
-
-  document.getElementById('logoutBtn').addEventListener('click', async function(){
-    await doLogout();
-  });
-
-  // ---------- MODE SELECT ----------
-  document.getElementById('pickTimer').addEventListener('click', function(){
-    mode = 'timer';
-    startGame();
-  });
-  document.getElementById('pickZen').addEventListener('click', function(){
-    mode = 'zen';
-    startGame();
-  });
-
-  // ---------- GAME ----------
-  function startGame(){
-    score = 0;
-    round = 0;
-    scoreValue.textContent = '0';
-    timerBlock.classList.toggle('hidden', mode === 'zen');
-    disco();
-    show('game');
-    requestAnimationFrame(placeTarget);
-    maybeShowDecoy();
-    if(mode === 'timer'){ startRound(); }
-    else { stopClock(); }
-  }
-
-  function getTimeLimit(s){
-    if(s < 10) return 10;
-    if(s < 20) return 7;
-    if(s < 30) return 6;
-    if(s < 40) return 5;
-    if(s < 50) return 4;
-    if(s < 60) return 3;
-    if(s < 70) return 2;
-    if(s < 80) return 1.5;
-    if(s < 90) return 1.2;
-    if(s < 100) return 1.05;
-
-    // beyond 100: same tapering logic, now starting from 1s instead of 2s.
-    var steps = Math.floor((s - 100) / 10);
-    var time = 1;
-    var decrement = 0.1;
-    for(var i = 0; i < steps; i++){
-      time = Math.round((time - decrement) * 100000) / 100000;
-      if(time <= decrement){ decrement = decrement / 10; }
-    }
-    return Math.max(time, 0.01);
-  }
-
-  function endRound(label){
-    stopClock();
-    removeDecoy();
-    document.getElementById('overLabel').textContent = label;
-    target.classList.add('missed');
-    window.AudioEngine.blinkSound();
-    setTimeout(function(){
-      target.classList.remove('missed');
-      gameOver();
-    }, 850);
-  }
-
-  var lastBeepSecond = null;
-
-  function startRound(){
-    timeLeft = getTimeLimit(score);
-    lastBeepSecond = null;
-    updateTimerDisplay();
-    requestAnimationFrame(placeTarget);
-    maybeShowDecoy();
-    stopClock();
-    timerId = setInterval(function(){
-      timeLeft -= 0.1;
-      if(timeLeft <= 0){
-        timeLeft = 0;
-        updateTimerDisplay();
-        endRound("TIME'S UP");
-        return;
+      /* Call onShow for new screen */
+      if(window.PageHandlers[name] && window.PageHandlers[name].onShow){
+        window.PageHandlers[name].onShow();
       }
-      updateTimerDisplay();
-      var wholeSecond = Math.ceil(timeLeft - 0.001);
-      if(wholeSecond <= 3 && wholeSecond >= 1 && wholeSecond !== lastBeepSecond){
-        lastBeepSecond = wholeSecond;
-        window.AudioEngine.timerBeep(wholeSecond === 1);
-      }
-    }, 100);
-  }
-
-  function updateTimerDisplay(){
-    var decimals = timeLeft < 0.1 ? 3 : (timeLeft < 1 ? 2 : 1);
-    timerValue.textContent = timeLeft.toFixed(decimals);
-    timerValue.classList.toggle('warn', timeLeft <= 2 && timeLeft > 0);
-  }
-
-  function stopClock(){
-    if(timerId){ clearInterval(timerId); timerId = null; }
-  }
-
-  function placeDecoyAwayFrom(el){
-    var rect = stage.getBoundingClientRect();
-    var tw = el.offsetWidth || 60;
-    var th = el.offsetHeight || 20;
-    var topOffset = safeTopOffset();
-    var maxX = Math.max(rect.width - tw - 10, 10);
-    var maxY = Math.max(rect.height - th - topOffset - 10, 10);
-    var x = Math.trunc(Math.random() * maxX) + 5;
-    var y = Math.trunc(Math.random() * maxY) + topOffset;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-  }
-
-  function removeDecoy(){
-    decoys.forEach(function(el){ el.remove(); });
-    decoys = [];
-  }
-
-  function maxDecoysForScore(s){
-    if(s < 20) return 0;
-    if(s < 150) return 1;
-    if(s < 300) return 2;
-    if(s < 500) return 3;
-    return 4;
-  }
-
-  function spawnOneDecoy(){
-    var el = document.createElement('button');
-    el.className = 'decoy';
-    el.textContent = 'Not Here!';
-    stage.appendChild(el);
-    requestAnimationFrame(function(){ placeDecoyAwayFrom(el); });
-    el.addEventListener('click', function(){
-      el.blur();
-      window.AudioEngine.missSound();
-      var idx = decoys.indexOf(el);
-      if(idx > -1){ decoys.splice(idx, 1); }
-      el.remove();
-      if(mode === 'timer'){
-        timeLeft = Math.max(timeLeft - 1, 0.01);
-        updateTimerDisplay();
-      }
-    });
-    decoys.push(el);
-  }
-
-  function maybeShowDecoy(){
-    removeDecoy();
-    var cap = maxDecoysForScore(score);
-    if(cap <= 0) return;
-    for(var i = 0; i < cap; i++){
-      if(Math.random() < DECOY_CHANCE){ spawnOneDecoy(); }
-    }
-  }
-
-  target.addEventListener('click', function(){
-    target.blur();
-    window.AudioEngine.hitSound();
-    score++;
-    round++;
-    scoreValue.textContent = String(score);
-    disco();
-    if(mode === 'timer'){
-      startRound();
-    } else {
-      requestAnimationFrame(placeTarget);
-      maybeShowDecoy();
-    }
-  });
-
-  document.getElementById('quitBtn').addEventListener('click', function(){
-    endRound('GAVE UP');
-  });
-
-  window.addEventListener('resize', function(){
-    if(screens.game.classList.contains('active')){ placeTarget(); }
-  });
-
-  function gameOver(){
-    removeDecoy();
-    window.AudioEngine.gameOverSound();
-    document.getElementById('finalScore').textContent = String(score);
-
-    var isNew = score > highScores[mode];
-    if(isNew){
-      highScores[mode] = score;
-    }
-    document.getElementById('newHighBadge').classList.toggle('hidden', !isNew);
-    var modeLabel = mode === 'timer' ? 'Timer' : 'Zen';
-    document.getElementById('bestLine').textContent = modeLabel + ' best: ' + highScores[mode];
-    renderBest();
-    submitScore(mode, score);
-
-    show('over');
-  }
-
-  document.getElementById('retryBtn').addEventListener('click', function(){
-    startGame();
-  });
-  document.getElementById('menuBtn').addEventListener('click', function(){
-    show('mode');
-  });
-
-  // ---------- RESTORE SESSION ON LOAD ----------
-  // Supabase keeps the session in the browser's own storage, so a page
-  // refresh (network blip, accidental reload, etc) doesn't have to mean
-  // logging in again — we just need to check for it before showing login.
-  (async function restoreSession(){
-    var waited = 0;
-    while(!window.fbReady && waited < 4000){
-      await new Promise(function(r){ setTimeout(r, 30); });
-      waited += 30;
-    }
-    if(!window.fbReady || !window.fbGetSession){
-      show('login');
-      return;
-    }
-    var profile = await window.fbGetSession();
-    if(profile){
-      playerName = profile.display_name;
-      highScores.timer = profile.timer_best || 0;
-      highScores.zen = profile.zen_best || 0;
-      document.getElementById('welcomeName').textContent = playerName;
-      renderBest();
-      startInactivityWatch();
-      show('mode');
-    } else {
-      show('login');
-    }
+    };
   })();
-
-})();
 </script>
+
+<!-- Shared utilities -->
+<script src="js/shared/audio.js"></script>
+<script type="module" src="js/shared/supabase-client.js"></script>
+<script src="js/shared/theme.js"></script>
+<script src="js/shared/nav.js"></script>
+
+<!-- Page scripts -->
+<script src="js/pages/login.js"></script>
+<script src="js/pages/mode.js"></script>
+<script src="js/pages/game.js"></script>
+<script src="js/pages/gameover.js"></script>
+<script src="js/pages/leaderboard.js"></script>
+<script src="js/pages/profile.js"></script>
+
 </body>
 </html>
