@@ -390,8 +390,13 @@
 <div id="frame">
   <div id="stage">
 
+    <!-- LOADING -->
+    <section class="screen active" id="screen-loading">
+      <p class="logo arcade" style="font-size:clamp(16px,4vw,28px); opacity:.7; animation:pulse 1.1s infinite;">LOADING…</p>
+    </section>
+
     <!-- LOGIN -->
-    <section class="screen active" id="screen-login">
+    <section class="screen" id="screen-login">
       <h1 class="logo arcade">CLICK <span>"here!"</span></h1>
       <p class="tagline">Just Click 'here!'.It is hiding somewhere on screen. catch it.</p>
       <div class="card">
@@ -843,6 +848,7 @@ window.AudioEngine = (function(){
 
 (function(){
   var screens = {
+    loading: document.getElementById('screen-loading'),
     login: document.getElementById('screen-login'),
     mode:  document.getElementById('screen-mode'),
     game:  document.getElementById('screen-game'),
@@ -855,7 +861,7 @@ window.AudioEngine = (function(){
       screens[k].classList.toggle('active', k === name);
     });
     document.body.classList.toggle('in-game', name === 'game' || name === 'over');
-    if(name === 'login' || name === 'mode' || name === 'leaderboard'){
+    if(name === 'login' || name === 'mode' || name === 'leaderboard' || name === 'loading'){
       document.documentElement.style.removeProperty('--disco-bg');
       document.documentElement.style.removeProperty('--disco-stage');
       document.documentElement.style.removeProperty('--disco-text');
@@ -1276,7 +1282,10 @@ window.AudioEngine = (function(){
       await new Promise(function(r){ setTimeout(r, 30); });
       waited += 30;
     }
-    if(!window.fbGetSession) return;
+    if(!window.fbReady || !window.fbGetSession){
+      show('login');
+      return;
+    }
     var profile = await window.fbGetSession();
     if(profile){
       playerName = profile.display_name;
@@ -1285,6 +1294,8 @@ window.AudioEngine = (function(){
       document.getElementById('welcomeName').textContent = playerName;
       renderBest();
       show('mode');
+    } else {
+      show('login');
     }
   })();
 
