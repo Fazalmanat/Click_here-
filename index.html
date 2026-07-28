@@ -647,7 +647,13 @@ window.AudioEngine = (function(){
     lastTrackIdx = idx;
     musicEl.src = BGM_TRACKS[idx];
     musicEl.load();
-    musicEl.play().catch(function(e){ console.error('BGM play() failed:', e); });
+    var p = musicEl.play();
+    if(p && typeof p.catch === 'function'){
+      p.catch(function(e){
+        console.error('BGM play() failed:', e);
+        musicStarted = false; // let a later, valid gesture retry
+      });
+    }
   }
 
   if(musicEl){
@@ -758,13 +764,17 @@ window.AudioEngine = (function(){
   // the music the moment the person interacts with the page at all
   // (typing, clicking, tapping), so it's already going by the time
   // they're done logging in rather than only starting afterward.
-  // Listening across several gesture types (not just pointerdown) matters
-  // on mobile, where pointerdown/touch handling varies across browsers.
+  // Only listen on events browsers actually treat as a valid gesture for
+  // unlocking autoplay (click, touchend, keydown, mouseup). pointerdown
+  // and touchstart are deliberately excluded — a touch could just be the
+  // start of a scroll, so browsers don't count it, and firing our attempt
+  // on it too early would waste the one "gesture window" before the real
+  // tap (touchend/click) ever happens.
   function firstGesture(){
     window.AudioEngine.ensureCtx();
     window.AudioEngine.startMusic();
   }
-  ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown'].forEach(function(evt){
+  ['touchend', 'click', 'keydown', 'mouseup'].forEach(function(evt){
     document.addEventListener(evt, firstGesture, { once: true, passive: true });
   });
 })();
