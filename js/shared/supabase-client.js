@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    supabase-client.js — Supabase Auth + DB helpers
    Loaded as type="module". Exposes functions on window.fb*
    ============================================================ */
@@ -62,7 +62,7 @@ window.fbGetLeaderboard = async function(modeKey){
   }
 };
 
-window.fbSubmitScore = async function(modeKey, score){
+window.fbSubmitScore = async function(modeKey, score, totalXP){
   var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
   try{
     var userRes = await supabase.auth.getUser();
@@ -70,8 +70,15 @@ window.fbSubmitScore = async function(modeKey, score){
     var userId = userRes.data.user.id;
     var current = await supabase.from('profiles').select(col).eq('id', userId).single();
     if(current.error) throw current.error;
-    if(score > current.data[col]){
-      var patch = {}; patch[col] = score; patch.updated_at = new Date().toISOString();
+    var patch = {};
+    if(score > (current.data[col] || 0)){
+      patch[col] = score;
+    }
+    if(typeof totalXP === 'number'){
+      patch.total_xp = totalXP;
+    }
+    if(Object.keys(patch).length > 0){
+      patch.updated_at = new Date().toISOString();
       await supabase.from('profiles').update(patch).eq('id', userId);
     }
   }catch(e){

@@ -1,12 +1,7 @@
-﻿/* ============================================================
-   profile.js — profile page with XP / level / rank system
+/* ============================================================
+   profile.js — profile page with XP / level / rank & level cap system
    ============================================================ */
 (function(){
-  /* XP formula */
-  function totalXP(scores){
-    return (scores.timer * 10) + (scores.zen * 5);
-  }
-
   var XP_PER_LEVEL = 50;
 
   var RANKS = [
@@ -24,31 +19,41 @@
     return RANKS[RANKS.length - 1];
   }
 
-  function getLevelInfo(xp){
-    var level        = Math.floor(xp / XP_PER_LEVEL) + 1;
+  function getLevelInfo(xp, timerBest, zenBest){
+    var uncappedLevel = Math.floor(xp / XP_PER_LEVEL) + 1;
+    var timerCap      = timerBest || 0;
+    var zenCap        = Math.floor((zenBest || 0) / 10);
+    var levelCap      = Math.max(timerCap, zenCap, 1);
+    var level         = Math.min(uncappedLevel, levelCap);
+    var isCapped      = uncappedLevel > levelCap;
+
     var xpInto       = xp % XP_PER_LEVEL;
-    var progress     = xpInto / XP_PER_LEVEL;
+    var progress     = isCapped ? 1.0 : (xpInto / XP_PER_LEVEL);
     var rank         = getRankInfo(level);
-    return { level, xpInto, xpForNext: XP_PER_LEVEL, progress, rank };
+
+    return { uncappedLevel, levelCap, timerCap, zenCap, level, isCapped, xpInto, xpForNext: XP_PER_LEVEL, progress, rank };
   }
 
   function renderProfile(){
-    var scores = window.AppState.highScores;
+    var scores = window.AppState.highScores || { timer: 0, zen: 0 };
     var name   = window.AppState.playerName || '?';
-    var xp     = totalXP(scores);
-    var info   = getLevelInfo(xp);
+    var xp     = window.AppState.totalXP || 0;
 
-    /* Avatar */
+    var info = getLevelInfo(xp, scores.timer || 0, scores.zen || 0);
+
+    /* Avatar styling */
     var avatar = document.getElementById('profileAvatar');
     if(avatar){
-      avatar.textContent = name.charAt(0).toUpperCase();
       avatar.style.background = info.rank.avatarGrad;
       avatar.style.boxShadow = '0 0 0 3px var(--card-border), 0 0 32px ' + info.rank.color.replace('var(--','').replace(')','');
     }
 
     /* Level badge */
     var badge = document.getElementById('profileLevelBadge');
-    if(badge){ badge.textContent = 'LVL ' + info.level; }
+    if(badge){
+      badge.textContent = info.isCapped ? ('LVL ' + info.level + ' (CAP)') : ('LVL ' + info.level);
+      badge.style.color = info.isCapped ? 'var(--pink)' : 'var(--amber)';
+    }
 
     /* Name & rank */
     var nameEl = document.getElementById('profileName');
@@ -60,7 +65,7 @@
       rankEl.style.color = info.rank.color;
     }
 
-    /* XP bar — set to 0 first for transition animation */
+    /* XP bar animation */
     var fill = document.getElementById('xpBarFill');
     if(fill){
       fill.style.transition = 'none';
@@ -76,9 +81,20 @@
     /* XP bar labels */
     var xpCur  = document.getElementById('xpCurrent');
     var xpNext = document.getElementById('xpNext');
-    var xpBase = (info.level - 1) * XP_PER_LEVEL;
     if(xpCur)  xpCur.textContent  = xp + ' XP';
-    if(xpNext) xpNext.textContent = 'Next: ' + (xpBase + XP_PER_LEVEL) + ' XP';
+    if(xpNext){
+      xpNext.textContent = info.isCapped ? 'Cap Reached' : ('Next: ' + (info.level * XP_PER_LEVEL) + ' XP');
+    }
+
+    /* Cap Note */
+    var capNoteEl = document.getElementById('profileCapNote');
+    if(capNoteEl){
+      if(info.isCapped){
+        capNoteEl.textContent = '🔒 Level capped at ' + info.levelCap + '! Score > ' + info.levelCap + ' in Timer or > ' + (info.levelCap * 10) + ' in Zen to unlock LVL ' + (info.level + 1);
+      } else {
+        capNoteEl.textContent = 'Level Cap: ' + info.levelCap + ' (Timer: 1:1 cap | Zen: 10:1 cap)';
+      }
+    }
 
     /* Stats */
     var timerEl = document.getElementById('profileTimerBest');
@@ -92,4 +108,12 @@
   window.PageHandlers['profile'] = {
     onShow: renderProfile
   };
+
+  /* Back button */
+  var profileBackBtn = document.getElementById('profileBackBtn');
+  if(profileBackBtn){
+    profileBackBtn.addEventListener('click', function(){
+      window.showScreen('mode');
+    });
+  }
 })();

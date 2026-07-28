@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    CLICK HERE! — styles.css
    ============================================================ */
 
@@ -124,7 +124,14 @@ body.in-game #topNav{ display:none; }
 .nav-btn:hover{ background:var(--hairline-soft); border-color:var(--hairline); }
 .nav-btn:active{ transform:scale(.94); }
 .nav-btn.icon-only{ padding:6px 9px; font-size:16px; }
-.nav-btn[aria-current="page"]{ opacity:.4; pointer-events:none; }
+.nav-avatar-wrap{
+  width:20px; height:20px; border-radius:50%; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--panel); border:1px solid var(--card-border);
+  flex-shrink:0;
+}
+.nav-avatar-img{ width:100%; height:100%; object-fit:cover; display:block; }
+.profile-avatar-img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
 
 body.logged-out #navLogoutBtn,
 body.logged-out #navProfileBtn{ display:none; }
@@ -374,6 +381,7 @@ button{
 .xp-bar-track{ width:100%; height:10px; background:var(--hairline-soft); border-radius:99px; overflow:hidden; margin-bottom:6px; }
 .xp-bar-fill{ height:100%; background:linear-gradient(90deg,var(--cyan),var(--pink)); border-radius:99px; width:0%; transition:width 1.1s cubic-bezier(.4,0,.2,1); }
 .xp-bar-labels{ display:flex; justify-content:space-between; font-size:11px; color:var(--ink-dim); }
+.cap-note{ margin:6px 0 0; font-size:10px; color:var(--amber); text-align:center; font-weight:500; min-height:14px; }
 .profile-stats{ display:flex; gap:12px; width:100%; }
 .stat-block{ flex:1; background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:14px 8px; text-align:center; }
 .stat-label{ margin:0 0 6px; font-size:8px; letter-spacing:2px; color:var(--ink-dim); font-family:'Press Start 2P', monospace; line-height:1.6; }

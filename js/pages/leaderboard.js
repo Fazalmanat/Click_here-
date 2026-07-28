@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    leaderboard.js — leaderboard screen
    ============================================================ */
 (function(){
@@ -51,6 +51,14 @@
       await renderLeaderboard();
       if(icon) icon.style.animation = '';
       lbRefreshBtn.disabled = false;
+    });
+  }
+
+  /* Back button */
+  var lbBackBtn = document.getElementById('lbBackBtn');
+  if(lbBackBtn){
+    lbBackBtn.addEventListener('click', function(){
+      window.showScreen('mode');
     });
   }
 })();

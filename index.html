@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -32,8 +32,11 @@
         <button class="nav-btn icon-only" id="muteToggle"  aria-label="Toggle sound">🔊</button>
       </div>
       <div class="nav-right">
-        <button class="nav-btn" id="navProfileBtn" aria-label="Profile">
-          👤 <span class="nav-label">Profile</span>
+        <button class="nav-btn profile-nav-btn" id="navProfileBtn" aria-label="Profile">
+          <div class="nav-avatar-wrap">
+            <img src="images/avatar_placeholder.png" alt="Profile" class="nav-avatar-img">
+          </div>
+          <span class="nav-label" id="navProfileName">Profile</span>
         </button>
         <button class="nav-btn" id="navLogoutBtn" aria-label="Log out">
           🚪 <span class="nav-label">Logout</span>
@@ -90,9 +93,12 @@
         </div>
       </div>
       <p class="best-line" id="lbNote" style="margin-top:14px;margin-bottom:4px;">shared across everyone playing this game</p>
-      <button class="btn-secondary" id="lbRefreshBtn" aria-label="Refresh leaderboard">
-        <span class="lb-refresh-icon" style="display:inline-block;">⟳</span> Refresh
-      </button>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn-secondary" id="lbRefreshBtn" aria-label="Refresh leaderboard">
+          <span class="lb-refresh-icon" style="display:inline-block;">⟳</span> Refresh
+        </button>
+        <button class="btn-secondary" id="lbBackBtn">← Back to modes</button>
+      </div>
     </section>
 
     <!-- ======== GAME ======== -->
@@ -131,7 +137,9 @@
     <section class="screen" id="screen-profile">
       <div class="profile-card">
         <div class="avatar-wrap">
-          <div class="avatar" id="profileAvatar">?</div>
+          <div class="avatar" id="profileAvatar">
+            <img src="images/avatar_placeholder.png" alt="Avatar" id="profileAvatarImg" class="profile-avatar-img">
+          </div>
           <div class="level-badge" id="profileLevelBadge">LVL 1</div>
         </div>
         <h2 class="profile-name" id="profileName"></h2>
@@ -142,6 +150,7 @@
             <span id="xpCurrent">0 XP</span>
             <span id="xpNext">Next: 50 XP</span>
           </div>
+          <p class="cap-note" id="profileCapNote"></p>
         </div>
         <div class="profile-stats">
           <div class="stat-block">
@@ -157,6 +166,7 @@
             <p class="stat-value" id="profileTotalXP">0</p>
           </div>
         </div>
+        <button class="btn-secondary" id="profileBackBtn" style="margin-top:10px;">← Back to modes</button>
       </div>
     </section>
 
@@ -172,6 +182,7 @@
   window.AppState = {
     playerName: '',
     highScores:  { timer: 0, zen: 0 },
+    totalXP:     0,
     mode:        'timer',
     score:       0,
     _overLabel:  "TIME'S UP"

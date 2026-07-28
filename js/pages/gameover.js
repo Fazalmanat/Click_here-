@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    gameover.js — game-over / results screen
    ============================================================ */
 (function(){
@@ -17,8 +17,15 @@
       var modeLabel = mode === 'timer' ? 'Timer' : 'Zen';
       document.getElementById('bestLine').textContent = modeLabel + ' best: ' + window.AppState.highScores[mode];
 
+      /* Accumulate XP for each play */
+      var earnedXP = score * 10;
+      window.AppState.totalXP = (window.AppState.totalXP || 0) + earnedXP;
+      if(window.AppState.playerName){
+        try{ localStorage.setItem('clickhere_xp_' + window.AppState.playerName, window.AppState.totalXP); }catch(e){}
+      }
+
       /* Submit score to Supabase asynchronously */
-      if(window.fbSubmitScore){ window.fbSubmitScore(mode, score); }
+      if(window.fbSubmitScore){ window.fbSubmitScore(mode, score, window.AppState.totalXP); }
     }
   };
 

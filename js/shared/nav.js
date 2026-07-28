@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    nav.js — top nav bar wiring
    ============================================================ */
 (function(){
@@ -10,6 +10,11 @@
   window.updateNav = function(screenName){
     var loggedIn = !!(window.AppState && window.AppState.playerName);
     document.body.classList.toggle('logged-out', !loggedIn || screenName === 'login' || screenName === 'loading');
+
+    var profileNameEl = document.getElementById('navProfileName');
+    if(profileNameEl){
+      profileNameEl.textContent = loggedIn ? window.AppState.playerName : 'Profile';
+    }
 
     /* Dim the button for the screen we are already on */
     if(navLbBtn)      navLbBtn.setAttribute('aria-current',      screenName === 'leaderboard' ? 'page' : 'false');

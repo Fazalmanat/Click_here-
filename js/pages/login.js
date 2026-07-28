@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    login.js — login form, session restore, logout, inactivity
    ============================================================ */
 (function(){
@@ -98,6 +98,9 @@
     window.AppState.playerName = result.row.display_name;
     window.AppState.highScores.timer = result.row.timer_best || 0;
     window.AppState.highScores.zen   = result.row.zen_best   || 0;
+    var savedXP = 0;
+    try{ savedXP = parseInt(localStorage.getItem('clickhere_xp_' + result.row.display_name), 10) || 0; }catch(e){}
+    window.AppState.totalXP = result.row.total_xp || savedXP || 0;
     document.getElementById('welcomeName').textContent = window.AppState.playerName;
     updateBestDisplay();
     window.AudioEngine.startMusic();
@@ -130,6 +133,9 @@
       window.AppState.playerName        = profile.display_name;
       window.AppState.highScores.timer  = profile.timer_best || 0;
       window.AppState.highScores.zen    = profile.zen_best   || 0;
+      var savedXP = 0;
+      try{ savedXP = parseInt(localStorage.getItem('clickhere_xp_' + profile.display_name), 10) || 0; }catch(e){}
+      window.AppState.totalXP = profile.total_xp || savedXP || 0;
       document.getElementById('welcomeName').textContent = window.AppState.playerName;
       updateBestDisplay();
       window.App.startInactivityWatch();
