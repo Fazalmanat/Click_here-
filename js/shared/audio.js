@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    audio.js — AudioEngine + mute button wiring
    ============================================================ */
 window.AudioEngine = (function(){
@@ -99,6 +99,25 @@ window.AudioEngine = (function(){
   function timerBeep(urgent){ playBuffer('beep', urgent ? 1.25 : 1); }
   function gameOverSound(){ playBuffer('over'); }
   function blinkSound(){ playBuffer('blink'); }
+  function celebrationSound(){
+    if(muted) return;
+    var c = ensureCtx();
+    if(!c) return;
+    var notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach(function(freq, i){
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      var startTime = c.currentTime + (i * 0.08);
+      gain.gain.setValueAtTime(0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+      osc.connect(gain);
+      gain.connect(c.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.35);
+    });
+  }
 
   function setMuted(v){
     muted = v;
@@ -113,7 +132,7 @@ window.AudioEngine = (function(){
   loadBuffer('over','sounds/game-over.mp3');
   loadBuffer('blink','sounds/blink.mp3');
 
-  return { hitSound, missSound, timerBeep, gameOverSound, blinkSound, startMusic, stopMusic, setMuted, isMuted, ensureCtx };
+  return { hitSound, missSound, timerBeep, gameOverSound, blinkSound, celebrationSound, startMusic, stopMusic, setMuted, isMuted, ensureCtx };
 })();
 
 /* -- Mute toggle wiring (top nav + in-game HUD button) -- */

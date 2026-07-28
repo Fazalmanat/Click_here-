@@ -38,4 +38,22 @@
       if(window.App && window.App.doLogout){ await window.App.doLogout(); }
     });
   }
+
+  /* Help Modal wiring */
+  var helpToggle = document.getElementById('helpToggle');
+  var helpModal  = document.getElementById('helpModal');
+  var closeHelpBtn = document.getElementById('closeHelpBtn');
+  var understandHelpBtn = document.getElementById('understandHelpBtn');
+
+  function openHelp(){ if(helpModal) helpModal.classList.remove('hidden'); }
+  function closeHelp(){ if(helpModal) helpModal.classList.add('hidden'); }
+
+  if(helpToggle) helpToggle.addEventListener('click', openHelp);
+  if(closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelp);
+  if(understandHelpBtn) understandHelpBtn.addEventListener('click', closeHelp);
+  if(helpModal){
+    helpModal.addEventListener('click', function(e){
+      if(e.target === helpModal) closeHelp();
+    });
+  }
 })();

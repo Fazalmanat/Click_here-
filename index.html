@@ -32,6 +32,7 @@
         <button class="nav-btn icon-only" id="muteToggle"  aria-label="Toggle sound">🔊</button>
       </div>
       <div class="nav-right">
+        <button class="nav-btn icon-only" id="helpToggle" aria-label="How to Play">❓</button>
         <button class="nav-btn profile-nav-btn" id="navProfileBtn" aria-label="Profile">
           <div class="nav-avatar-wrap">
             <img src="images/avatar_placeholder.png" alt="Profile" class="nav-avatar-img">
@@ -126,6 +127,7 @@
       <p class="new-high hidden" id="newHighBadge">★ NEW HIGH SCORE ★</p>
       <p class="final-score arcade" id="finalScore">0</p>
       <p class="final-label">rounds cleared</p>
+      <p class="xp-earned-badge" id="xpEarnedBadge">+0 EXP</p>
       <p class="best-line" id="bestLine"></p>
       <div class="btn-row">
         <button class="btn-primary arcade" style="font-size:11px;width:auto;padding:14px 22px;" id="retryBtn">RETRY</button>
@@ -169,6 +171,38 @@
         <button class="btn-secondary" id="profileBackBtn" style="margin-top:10px;">← Back to modes</button>
       </div>
     </section>
+
+    <!-- ======== HELP MODAL ======== -->
+    <div id="helpModal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="arcade" style="font-size:13px;color:var(--cyan);margin:0;">HOW TO PLAY</h2>
+          <button id="closeHelpBtn" class="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:10px;">
+          <div class="help-section">
+            <h4>🎯 Objective</h4>
+            <p>Click the <strong>"Here!"</strong> button as fast as you can! Avoid clicking <strong>"Not Here!"</strong> decoy buttons which penalize your timer.</p>
+          </div>
+          <div class="help-section">
+            <h4>⚡ Game Modes</h4>
+            <p><strong>Timer Mode:</strong> Fast arcade mode where time limit shrinks each round.</p>
+            <p><strong>Zen Mode:</strong> Relaxed mode with no clock.</p>
+          </div>
+          <div class="help-section">
+            <h4>⭐ EXP & Level Cap Rules</h4>
+            <p>• Every point scored earns <strong>+1 EXP</strong> (+10 Bonus EXP for setting a new High Score! 🎉).</p>
+            <p>• <strong>Level Cap Rule:</strong> Your level cannot exceed your High Score limit!</p>
+            <ul style="margin:4px 0 0 14px;padding:0;font-size:11px;color:var(--ink-dim);">
+              <li><strong>Timer Mode:</strong> 1 point = 1 Level Cap (Score 10 = LVL 10 Cap)</li>
+              <li><strong>Zen Mode:</strong> 10 points = 1 Level Cap (Score 100 = LVL 10 Cap)</li>
+            </ul>
+            <p style="margin-top:6px;font-size:11px;color:var(--amber);">Set higher scores in Timer or Zen to break your level cap!</p>
+          </div>
+        </div>
+        <button class="btn-primary arcade" id="understandHelpBtn" style="font-size:10px;margin-top:4px;">GOT IT!</button>
+      </div>
+    </div>
 
   </div><!-- /stage -->
 </div><!-- /frame -->
