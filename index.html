@@ -20,11 +20,6 @@
 <audio id="bgMusic" preload="auto"></audio>
 
 <div id="frame">
-  <!-- Clockwise border-chase: 4 runners, one per side -->
-  <span class="border-runner border-runner-top"></span>
-  <span class="border-runner border-runner-right"></span>
-  <span class="border-runner border-runner-bottom"></span>
-  <span class="border-runner border-runner-left"></span>
   <div id="stage">
 
     <!-- ======== TOP NAV BAR ======== -->
@@ -87,23 +82,53 @@
 
     <!-- ======== LEADERBOARD ======== -->
     <section class="screen" id="screen-leaderboard">
-      <p class="mode-title arcade" style="font-size:14px;margin-bottom:18px;">LEADERBOARD</p>
-      <div class="lb-columns">
-        <div class="lb-col">
-          <h4>Timer</h4>
-          <ol id="lbTimerList"></ol>
+      <p class="mode-title arcade" style="font-size:14px;margin-bottom:12px;">LEADERBOARD</p>
+      
+      <!-- Mode Tabs -->
+      <div class="lb-tabs">
+        <button class="lb-tab-btn active" id="lbTabTimer">⏱️ Timer Mode</button>
+        <button class="lb-tab-btn" id="lbTabZen">🌙 Zen Mode</button>
+      </div>
+
+      <!-- Podium Top 3 -->
+      <div class="lb-podium">
+        <!-- 2nd Place -->
+        <div class="podium-pillar step-2" id="podium2">
+          <div class="podium-badge">🥈 2nd</div>
+          <div class="podium-name" id="podiumName2">--</div>
+          <div class="podium-score arcade" id="podiumScore2">-</div>
+          <div class="podium-block">2</div>
         </div>
-        <div class="lb-col">
-          <h4>Zen</h4>
-          <ol id="lbZenList"></ol>
+
+        <!-- 1st Place -->
+        <div class="podium-pillar step-1" id="podium1">
+          <div class="podium-crown">👑</div>
+          <div class="podium-badge">🥇 1st</div>
+          <div class="podium-name" id="podiumName1">--</div>
+          <div class="podium-score arcade" id="podiumScore1">-</div>
+          <div class="podium-block">1</div>
+        </div>
+
+        <!-- 3rd Place -->
+        <div class="podium-pillar step-3" id="podium3">
+          <div class="podium-badge">🥉 3rd</div>
+          <div class="podium-name" id="podiumName3">--</div>
+          <div class="podium-score arcade" id="podiumScore3">-</div>
+          <div class="podium-block">3</div>
         </div>
       </div>
-      <p class="best-line" id="lbNote" style="margin-top:14px;margin-bottom:4px;">shared across everyone playing this game</p>
+
+      <!-- Places 4 to 10 List -->
+      <div class="lb-rest-card">
+        <ol class="lb-rest-list" id="lbRestList"></ol>
+      </div>
+
+      <p class="best-line" id="lbNote" style="margin-top:8px;margin-bottom:4px;">global highscores</p>
       <div class="lb-btn-row">
         <button class="btn-secondary lb-btn" id="lbRefreshBtn" aria-label="Refresh leaderboard">
           <span class="lb-refresh-icon">⟳</span> Refresh
         </button>
-        <button class="btn-secondary lb-btn" id="lbBackBtn">← Back to modes</button>
+        <button class="btn-secondary lb-btn" id="lbBackBtn">← Back</button>
       </div>
     </section>
 

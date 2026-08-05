@@ -96,11 +96,28 @@
 
     nameStatus.textContent = '';
     window.AppState.playerName = result.row.display_name;
-    window.AppState.highScores.timer = result.row.timer_best || 0;
-    window.AppState.highScores.zen   = result.row.zen_best   || 0;
-    var savedXP = 0;
-    try{ savedXP = parseInt(localStorage.getItem('clickhere_xp_' + result.row.display_name), 10) || 0; }catch(e){}
-    window.AppState.totalXP = result.row.total_xp || savedXP || 0;
+
+    var name = result.row.display_name;
+    var dbTimer = result.row.timer_best || 0;
+    var dbZen   = result.row.zen_best   || 0;
+    var dbXP    = result.row.total_xp   || 0;
+
+    var locTimer = parseInt(localStorage.getItem('clickhere_timer_' + name), 10) || 0;
+    var locZen   = parseInt(localStorage.getItem('clickhere_zen_'   + name), 10) || 0;
+    var locXP    = parseInt(localStorage.getItem('clickhere_xp_'    + name), 10) || 0;
+
+    window.AppState.highScores.timer = Math.max(dbTimer, locTimer);
+    window.AppState.highScores.zen   = Math.max(dbZen,   locZen);
+    window.AppState.totalXP          = Math.max(dbXP,    locXP);
+
+    /* Sync back higher local scores to DB if needed */
+    if(locTimer > dbTimer || locZen > dbZen || locXP > dbXP){
+      if(window.fbSubmitScore){
+        window.fbSubmitScore('timer', window.AppState.highScores.timer, window.AppState.totalXP);
+        window.fbSubmitScore('zen',   window.AppState.highScores.zen,   window.AppState.totalXP);
+      }
+    }
+
     document.getElementById('welcomeName').textContent = window.AppState.playerName;
     updateBestDisplay();
     window.AudioEngine.startMusic();
@@ -130,12 +147,28 @@
 
     var profile = await window.fbGetSession();
     if(profile){
-      window.AppState.playerName        = profile.display_name;
-      window.AppState.highScores.timer  = profile.timer_best || 0;
-      window.AppState.highScores.zen    = profile.zen_best   || 0;
-      var savedXP = 0;
-      try{ savedXP = parseInt(localStorage.getItem('clickhere_xp_' + profile.display_name), 10) || 0; }catch(e){}
-      window.AppState.totalXP = profile.total_xp || savedXP || 0;
+      window.AppState.playerName = profile.display_name;
+
+      var name = profile.display_name;
+      var dbTimer = profile.timer_best || 0;
+      var dbZen   = profile.zen_best   || 0;
+      var dbXP    = profile.total_xp   || 0;
+
+      var locTimer = parseInt(localStorage.getItem('clickhere_timer_' + name), 10) || 0;
+      var locZen   = parseInt(localStorage.getItem('clickhere_zen_'   + name), 10) || 0;
+      var locXP    = parseInt(localStorage.getItem('clickhere_xp_'    + name), 10) || 0;
+
+      window.AppState.highScores.timer = Math.max(dbTimer, locTimer);
+      window.AppState.highScores.zen   = Math.max(dbZen,   locZen);
+      window.AppState.totalXP          = Math.max(dbXP,    locXP);
+
+      if(locTimer > dbTimer || locZen > dbZen || locXP > dbXP){
+        if(window.fbSubmitScore){
+          window.fbSubmitScore('timer', window.AppState.highScores.timer, window.AppState.totalXP);
+          window.fbSubmitScore('zen',   window.AppState.highScores.zen,   window.AppState.totalXP);
+        }
+      }
+
       document.getElementById('welcomeName').textContent = window.AppState.playerName;
       updateBestDisplay();
       window.App.startInactivityWatch();

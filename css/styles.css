@@ -60,68 +60,24 @@ html,body{
   overflow:hidden;
 }
 
-/* Old ::before chase removed — replaced with 4-runner border below */
+/* Checkered Marquee Border — Gamefield color & Button color moving Counter-Clockwise */
+#frame::before{
+  content:""; position:absolute; inset:0;
+  padding:var(--frame-gap);
+  border-radius:26px;
+  background: repeating-conic-gradient(var(--disco-stage) 0% 25%, var(--disco-text) 0% 50%) 0 0 / 28px 28px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: counterClockwiseCheckered 1.2s linear infinite;
+  opacity: .95;
+  pointer-events: none;
+  transition: background .35s ease;
+}
 
-/* ---- Clockwise perimeter runner ---- */
-/* Total cycle = 4 segments. Each runner animates its own edge.
-   The TOTAL duration must be the same for all 4 so the "dot" loops perfectly.
-   We stagger each runner by 25% (1/4 of the period) using animation-delay.
-   Top  edge runs  left → right   (delay 0)
-   Right edge runs top  → bottom  (delay -1/4 period so it starts already mid-way)
-   Bottom edge runs right → left  (delay -2/4 period)
-   Left  edge runs bottom→ top   (delay -3/4 period) */
-.border-runner{
-  position:absolute;
-  pointer-events:none;
-  z-index:50;
-  background:var(--disco-text);
-  box-shadow:0 0 12px 4px var(--disco-text), 0 0 28px 8px var(--disco-text);
-  border-radius:99px;
-  transition:background .35s ease, box-shadow .35s ease;
-}
-.border-runner-top{
-  top:calc(var(--frame-gap)/2 - 3px);
-  left:0; right:0;
-  height:6px; width:40%;
-  animation:runTop 2.4s linear infinite;
-  animation-delay:0s;
-}
-.border-runner-right{
-  top:0; bottom:0;
-  right:calc(var(--frame-gap)/2 - 3px);
-  width:6px; height:40%;
-  animation:runRight 2.4s linear infinite;
-  animation-delay:-0.6s;
-}
-.border-runner-bottom{
-  bottom:calc(var(--frame-gap)/2 - 3px);
-  left:0; right:0;
-  height:6px; width:40%;
-  animation:runBottom 2.4s linear infinite;
-  animation-delay:-1.2s;
-}
-.border-runner-left{
-  top:0; bottom:0;
-  left:calc(var(--frame-gap)/2 - 3px);
-  width:6px; height:40%;
-  animation:runLeft 2.4s linear infinite;
-  animation-delay:-1.8s;
-}
-@keyframes runTop{
-  from{ left:-40%; right:auto; width:40%; }
-  to  { left:100%;  right:auto; width:40%; }
-}
-@keyframes runRight{
-  from{ top:-40%; bottom:auto; height:40%; }
-  to  { top:100%;  bottom:auto; height:40%; }
-}
-@keyframes runBottom{
-  from{ right:-40%; left:auto; width:40%; }
-  to  { right:100%;  left:auto; width:40%; }
-}
-@keyframes runLeft{
-  from{ bottom:-40%; top:auto; height:40%; }
-  to  { bottom:100%;  top:auto; height:40%; }
+@keyframes counterClockwiseCheckered{
+  0%   { background-position: 0 0; }
+  100% { background-position: -28px 28px; }
 }
 
 #stage{
@@ -496,22 +452,121 @@ button{
 }
 
 /* ============================================================
-   LEADERBOARD
+   LEADERBOARD — PODIUM & MODE TABS
    ============================================================ */
-.lb-columns{
-  display:flex; gap:24px; justify-content:center; flex-wrap:wrap;
-  max-height:42vh; overflow-y:auto;
-  width:min(90vw,460px); margin-bottom:4px;
+.lb-tabs{
+  display:flex; gap:10px; justify-content:center;
+  margin-bottom:12px; width:min(90vw,420px);
 }
-.lb-col{ flex:1; min-width:140px; text-align:left; }
-.lb-col h4{ margin:0 0 10px; font-size:12px; letter-spacing:2px; color:var(--ink-dim); text-transform:uppercase; }
-.lb-col ol{ list-style:decimal; margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
-.lb-col li{ font-size:13px; color:var(--ink); }
-.lb-col li.lb-empty{ color:var(--ink-dim); list-style:none; margin-left:-20px; }
-.lb-col li.lb-me{ color:var(--amber); font-weight:600; }
+.lb-tab-btn{
+  flex:1; padding:8px 14px;
+  border-radius:10px; font-size:12px; font-weight:600;
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  color:var(--ink-dim);
+  cursor:pointer;
+  transition:all .18s ease;
+}
+.lb-tab-btn:hover{ color:var(--ink); border-color:var(--hairline); }
+.lb-tab-btn.active{
+  background:rgba(0,229,255,0.12);
+  border-color:var(--cyan);
+  color:var(--cyan);
+  box-shadow:0 0 14px rgba(0,229,255,0.2);
+}
+
+/* Podium Top 3 Structure */
+.lb-podium{
+  display:flex; align-items:flex-end; justify-content:center;
+  gap:10px; width:min(90vw,420px);
+  margin-bottom:12px; height:180px;
+}
+.podium-pillar{
+  flex:1; max-width:125px;
+  display:flex; flex-direction:column; align-items:center;
+  position:relative;
+  transition:transform .2s ease;
+}
+.podium-pillar.lb-me{
+  filter:drop-shadow(0 0 10px var(--amber));
+}
+.podium-pillar.step-1{ order:2; height:100%; }
+.podium-pillar.step-2{ order:1; height:84%; }
+.podium-pillar.step-3{ order:3; height:72%; }
+
+.podium-crown{
+  font-size:20px; position:absolute; top:-24px;
+  animation:floatCrown 2s infinite ease-in-out;
+}
+@keyframes floatCrown{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-4px); }
+}
+
+.podium-badge{
+  font-size:11px; font-weight:700; color:var(--ink);
+  margin-bottom:2px; white-space:nowrap;
+}
+.podium-name{
+  font-size:11px; font-weight:600; color:var(--ink-dim);
+  max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.podium-pillar.lb-me .podium-name{ color:var(--amber); font-weight:700; }
+
+.podium-score{
+  font-size:11px; color:var(--cyan); margin:2px 0 4px;
+}
+.step-1 .podium-score{ color:var(--amber); text-shadow:0 0 8px rgba(255,204,0,0.5); }
+.step-2 .podium-score{ color:#e0e0e0; }
+.step-3 .podium-score{ color:#cd7f32; }
+
+.podium-block{
+  width:100%; flex:1;
+  border-radius:10px 10px 0 0;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Press Start 2P', monospace; font-size:22px; font-weight:700;
+  color:rgba(255,255,255,0.3);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 16px rgba(0,0,0,0.4);
+}
+.step-1 .podium-block{
+  background:linear-gradient(180deg, rgba(255,204,0,0.35) 0%, rgba(255,140,0,0.2) 100%);
+  border:1px solid rgba(255,204,0,0.5); border-bottom:none;
+}
+.step-2 .podium-block{
+  background:linear-gradient(180deg, rgba(220,220,240,0.25) 0%, rgba(140,140,170,0.15) 100%);
+  border:1px solid rgba(220,220,240,0.4); border-bottom:none;
+}
+.step-3 .podium-block{
+  background:linear-gradient(180deg, rgba(205,127,50,0.25) 0%, rgba(130,70,20,0.15) 100%);
+  border:1px solid rgba(205,127,50,0.4); border-bottom:none;
+}
+
+/* Ranks 4-10 Scrollable Card */
+.lb-rest-card{
+  width:min(90vw,420px); max-height:130px; overflow-y:auto;
+  background:var(--card-bg); border:1px solid var(--card-border);
+  border-radius:12px; padding:6px 10px;
+}
+.lb-rest-list{
+  list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column; gap:4px;
+}
+.lb-rest-item{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:5px 8px; border-radius:6px; font-size:12px;
+  background:rgba(255,255,255,0.02);
+}
+.lb-rest-item.lb-me{
+  background:rgba(255,204,0,0.15); border:1px solid rgba(255,204,0,0.3);
+  color:var(--amber); font-weight:600;
+}
+.lb-rank-num{ font-size:10px; color:var(--ink-dim); width:32px; text-align:left; }
+.lb-rank-name{ flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lb-rank-score{ font-size:11px; color:var(--cyan); }
+
 .lb-btn-row{
   display:flex; gap:12px; justify-content:center; align-items:center;
-  width:min(90vw,380px); margin-top:14px;
+  width:min(90vw,380px); margin-top:8px;
 }
 .lb-btn{
   flex:1; display:inline-flex; align-items:center; justify-content:center;

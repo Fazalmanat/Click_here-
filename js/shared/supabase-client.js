@@ -73,16 +73,34 @@ window.fbGetLeaderboard = async function(modeKey){
 window.fbSubmitScore = async function(modeKey, score, totalXP){
   var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
   try{
+    /* Local backup storage */
+    if(window.AppState && window.AppState.playerName){
+      var localKey = 'clickhere_' + modeKey + '_' + window.AppState.playerName;
+      var curLocal = parseInt(localStorage.getItem(localKey), 10) || 0;
+      if(score > curLocal){
+        try{ localStorage.setItem(localKey, score); }catch(e){}
+      }
+    }
+
     var userRes = await supabase.auth.getUser();
     if(userRes.error || !userRes.data.user) return;
     var userId = userRes.data.user.id;
     var current = await supabase.from('profiles').select(col + ',total_xp').eq('id', userId).single();
-    if(current.error) throw current.error;
+    
+    if(current.error){
+      /* Upsert profile if missing */
+      var newProfile = { id: userId, display_name: window.AppState.playerName || 'Player' };
+      newProfile[col] = score;
+      if(typeof totalXP === 'number') newProfile.total_xp = totalXP;
+      await supabase.from('profiles').upsert(newProfile);
+      return;
+    }
+
     var patch = {};
     if(score > 0 && score > (current.data[col] || 0)){
       patch[col] = score;
     }
-    /* FIX: never let XP go backwards — only update if new value is higher */
+    /* Never let total XP decrease */
     if(typeof totalXP === 'number' && totalXP > (current.data.total_xp || 0)){
       patch.total_xp = totalXP;
     }
