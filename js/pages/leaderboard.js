@@ -54,11 +54,17 @@
     });
   }
 
-  /* Back button */
+  /* Back button — guard against unauthenticated bypass */
   var lbBackBtn = document.getElementById('lbBackBtn');
   if(lbBackBtn){
     lbBackBtn.addEventListener('click', function(){
-      window.showScreen('mode');
+      /* BUG FIX: If user reached leaderboard without logging in,
+         redirect back to login instead of mode select */
+      if(window.AppState && window.AppState.playerName){
+        window.showScreen('mode');
+      } else {
+        window.showScreen('login');
+      }
     });
   }
 })();

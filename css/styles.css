@@ -356,6 +356,41 @@ button{
 .final-label{ color:var(--ink-dim); font-size:12px; letter-spacing:2px; margin-bottom:14px; }
 .btn-row{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%; }
 
+/* Give-up slogan on game-over screen */
+.over-give-up-slogan{
+  font-size:12px; font-style:italic;
+  color:var(--amber); opacity:.88;
+  margin:0 0 8px; max-width:320px;
+  animation:pulse 2s infinite;
+  letter-spacing:.3px; line-height:1.4;
+}
+
+/* Floating taunt popup spawned near decoy clicks */
+.decoy-taunt{
+  position:absolute;
+  font-family:'Press Start 2P', monospace;
+  font-size:8px;
+  color:var(--pink);
+  text-shadow:0 0 8px var(--pink-glow);
+  background:rgba(18,12,30,.82);
+  border:1px solid var(--pink);
+  border-radius:8px;
+  padding:5px 9px;
+  pointer-events:none;
+  z-index:10;
+  white-space:nowrap;
+  animation:tauntPop .25s cubic-bezier(.175,.885,.32,1.275) forwards, tauntFade 1.4s ease forwards;
+  transform-origin:bottom center;
+}
+@keyframes tauntPop{
+  from{ transform:scale(0.6) translateY(8px); opacity:0; }
+  to  { transform:scale(1)   translateY(0);   opacity:1; }
+}
+@keyframes tauntFade{
+  0%,50%{ opacity:1; }
+  100%  { opacity:0; transform:translateY(-16px); }
+}
+
 /* EXP Progress Slider Card */
 .over-xp-card {
   width:100%;

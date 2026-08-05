@@ -23,6 +23,8 @@
 
   if(navLbBtn){
     navLbBtn.addEventListener('click', function(){
+      /* Anyone can VIEW the leaderboard (read-only) — no login guard needed here.
+         The back button in leaderboard guards the return path. */
       window.showScreen('leaderboard');
     });
   }

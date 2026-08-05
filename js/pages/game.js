@@ -15,9 +15,37 @@
   var timeLeft = 5.0;
   var lastBeepSecond = null;
 
-  /* Expose stopClock so doLogout can halt the timer */
   window.App = window.App || {};
   window.App.stopClock = stopClock;
+
+  /* ---- Decoy taunt slogans ---- */
+  var DECOY_SLOGANS = [
+    "WRONG ONE! −2s ⏱",
+    "Not here, genius! −2s",
+    "Nope! Try again −2s 😂",
+    "Classic mistake −2s",
+    "The real one is hiding −2s",
+    "Eyes open! −2s 👀",
+    "Gotcha! −2s 😈",
+    "False alarm! −2s",
+    "Fooled you! −2s 🥡",
+    "Haha no. −2s"
+  ];
+
+  /* Show a floating taunt near a given element */
+  function showDecoyTaunt(nearEl){
+    var rect = nearEl.getBoundingClientRect();
+    var stageRect = stage.getBoundingClientRect();
+    var popup = document.createElement('div');
+    popup.className = 'decoy-taunt';
+    popup.textContent = DECOY_SLOGANS[Math.floor(Math.random() * DECOY_SLOGANS.length)];
+    var left = rect.left - stageRect.left + rect.width / 2;
+    var top  = rect.top  - stageRect.top  - 28;
+    popup.style.left = Math.max(4, Math.min(left, stageRect.width - 180)) + 'px';
+    popup.style.top  = Math.max(4, top) + 'px';
+    stage.appendChild(popup);
+    setTimeout(function(){ popup.remove(); }, 1400);
+  }
 
   /* ---- disco colour ---- */
   function randColor(min, max){
@@ -131,14 +159,16 @@
     el.textContent = 'Not Here!';
     stage.appendChild(el);
     requestAnimationFrame(function(){ placeDecoyAwayFrom(el); });
-    el.addEventListener('click', function(){
+    el.addEventListener('click', function(e){
       el.blur();
       window.AudioEngine.missSound();
+      showDecoyTaunt(el);
       var idx = decoys.indexOf(el);
       if(idx > -1){ decoys.splice(idx,1); }
       el.remove();
       if(window.AppState.mode === 'timer'){
-        timeLeft = Math.max(timeLeft - 1, 0.01);
+        /* BUG FIX / Feature: increased penalty from -1s to -2s for false touch */
+        timeLeft = Math.max(timeLeft - 2, 0.01);
         updateTimerDisplay();
       }
     });
