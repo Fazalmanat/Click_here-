@@ -73,7 +73,7 @@ window.fbGetLeaderboard = async function(modeKey){
 window.fbSubmitScore = async function(modeKey, score, totalXP){
   var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
   try{
-    /* Local backup storage */
+    /* 1. Local backup storage */
     if(window.AppState && window.AppState.playerName){
       var localKey = 'clickhere_' + modeKey + '_' + window.AppState.playerName;
       var curLocal = parseInt(localStorage.getItem(localKey), 10) || 0;
@@ -82,41 +82,60 @@ window.fbSubmitScore = async function(modeKey, score, totalXP){
       }
     }
 
+    /* 2. Get active Supabase Auth user */
     var sessionRes = await supabase.auth.getSession();
     var user = sessionRes.data && sessionRes.data.session && sessionRes.data.session.user;
     if(!user){
       var userRes = await supabase.auth.getUser();
       user = userRes.data && userRes.data.user;
     }
-    if(!user) return;
+    if(!user){
+      console.warn('fbSubmitScore: No active user session in Supabase Auth');
+      return;
+    }
 
     var userId = user.id;
+
+    /* 3. Fetch current profile from Supabase */
     var current = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
     var profile = (current && current.data) || {};
 
-    var patch = {
-      id: userId,
-      display_name: window.AppState.playerName || profile.display_name || 'Player',
-      updated_at: new Date().toISOString()
-    };
-
     var currentBest = profile[col] || 0;
-    if(score > currentBest){
-      patch[col] = score;
-    } else {
-      patch[col] = currentBest;
-    }
+    var newBest = Math.max(score, currentBest);
 
     var currentXP = profile.total_xp || 0;
-    if(typeof totalXP === 'number' && totalXP > currentXP){
-      patch.total_xp = totalXP;
-    } else {
-      patch.total_xp = currentXP;
+    var newXP = (typeof totalXP === 'number') ? Math.max(totalXP, currentXP) : currentXP;
+
+    if(window.AppState){
+      if(!window.AppState.highScores) window.AppState.highScores = { timer: 0, zen: 0 };
+      window.AppState.highScores[modeKey] = newBest;
+      window.AppState.totalXP = newXP;
     }
 
-    var res = await supabase.from('profiles').upsert(patch).select();
-    if(res.error){
-      console.error('Supabase profile upsert error:', res.error);
+    /* 4. Prepare update payload */
+    var patch = {
+      updated_at: new Date().toISOString()
+    };
+    patch[col] = newBest;
+    patch.total_xp = newXP;
+    if(window.AppState && window.AppState.playerName){
+      patch.display_name = window.AppState.playerName;
+    }
+
+    /* 5. Direct UPDATE query (compatible with RLS UPDATE policy) */
+    var updateRes = await supabase.from('profiles').update(patch).eq('id', userId).select();
+    if(updateRes.error){
+      console.error('Supabase profile update error:', updateRes.error);
+    }
+
+    /* Fallback INSERT if profile row does not exist yet */
+    if(!updateRes.data || updateRes.data.length === 0){
+      patch.id = userId;
+      patch.display_name = window.AppState.playerName || profile.display_name || 'Player';
+      var insertRes = await supabase.from('profiles').insert(patch).select();
+      if(insertRes.error){
+        console.error('Supabase profile insert fallback error:', insertRes.error);
+      }
     }
   }catch(e){
     console.error('Supabase score write failed', e);
