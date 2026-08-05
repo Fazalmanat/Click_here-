@@ -21,16 +21,35 @@
     "At least you're fast at giving up! ⚡"
   ];
 
+  /* ---- Time's up slogans ---- */
+  var TIMES_UP_SLOGANS = [
+    "Too slow, champ 🐌",
+    "The button escaped. Again. 🏃",
+    "Time waits for no clicker ⏳",
+    "Speed: not your strong suit 🐢",
+    "Your reaction speed is… a concern 😬",
+    "404: click not found in time 🖥️",
+    "The clock had no mercy 💀",
+    "That button is somewhere laughing at you 😂",
+    "Almost! (Not really) 😅",
+    "Your fingers need a firmware update 🔧",
+    "Timed out like an old router 📡",
+    "It vanished before you could blink 👁️"
+  ];
+
   window.PageHandlers['over'] = {
     onShow: function(){
       var score = window.AppState.score || 0;
       var mode  = window.AppState.mode  || 'timer';
       var label = window.AppState._overLabel || "TIME'S UP";
 
-      /* ---- Show give-up slogan if player quit ---- */
+      /* ---- Show contextual slogan ---- */
       var sloganEl = document.getElementById('overGiveUpSlogan');
       if(label === 'GAVE UP'){
         var slogan = GIVE_UP_SLOGANS[Math.floor(Math.random() * GIVE_UP_SLOGANS.length)];
+        if(sloganEl){ sloganEl.textContent = slogan; sloganEl.classList.remove('hidden'); }
+      } else if(label === "TIME'S UP"){
+        var slogan = TIMES_UP_SLOGANS[Math.floor(Math.random() * TIMES_UP_SLOGANS.length)];
         if(sloganEl){ sloganEl.textContent = slogan; sloganEl.classList.remove('hidden'); }
       } else {
         if(sloganEl){ sloganEl.textContent = ''; sloganEl.classList.add('hidden'); }

@@ -3,12 +3,32 @@
    ============================================================ */
 (function(){
   var lbAutoRefreshId = null;
+  var _fetching = false;
 
   async function renderLeaderboard(){
-    var timerList = await window.fbGetLeaderboard('timer');
-    var zenList   = await window.fbGetLeaderboard('zen');
-    renderList('lbTimerList', timerList);
-    renderList('lbZenList',   zenList);
+    if(_fetching) return;   /* debounce — skip if already fetching */
+    _fetching = true;
+    setLoadingState(true);
+    try{
+      var timerList = await window.fbGetLeaderboard('timer');
+      var zenList   = await window.fbGetLeaderboard('zen');
+      renderList('lbTimerList', timerList);
+      renderList('lbZenList',   zenList);
+    } catch(e){
+      console.error('leaderboard render failed', e);
+    }
+    setLoadingState(false);
+    _fetching = false;
+  }
+
+  function setLoadingState(on){
+    var icon = document.querySelector('.lb-refresh-icon');
+    var btn  = document.getElementById('lbRefreshBtn');
+    if(icon){
+      icon.style.animation = on ? 'lbSpin .55s linear infinite' : '';
+      icon.style.color = on ? 'var(--cyan)' : '';
+    }
+    if(btn) btn.disabled = on;
   }
 
   function renderList(elId, list){
@@ -22,9 +42,10 @@
       el.appendChild(li);
       return;
     }
-    list.forEach(function(entry){
+    list.forEach(function(entry, i){
       var li = document.createElement('li');
-      li.textContent = entry.name + ' — ' + entry.score;
+      var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+      li.textContent = (medal ? medal + ' ' : '') + entry.name + ' — ' + entry.score;
       if(entry.name === window.AppState.playerName){ li.className = 'lb-me'; }
       el.appendChild(li);
     });
@@ -34,23 +55,19 @@
     onShow: function(){
       if(lbAutoRefreshId){ clearInterval(lbAutoRefreshId); }
       renderLeaderboard();
-      lbAutoRefreshId = setInterval(renderLeaderboard, 8000);
+      /* Restart auto-refresh every 10s */
+      lbAutoRefreshId = setInterval(renderLeaderboard, 10000);
     },
     onHide: function(){
       if(lbAutoRefreshId){ clearInterval(lbAutoRefreshId); lbAutoRefreshId = null; }
     }
   };
 
-  /* Refresh button — bottom-center of leaderboard screen */
+  /* Refresh button */
   var lbRefreshBtn = document.getElementById('lbRefreshBtn');
   if(lbRefreshBtn){
-    lbRefreshBtn.addEventListener('click', async function(){
-      lbRefreshBtn.disabled = true;
-      var icon = lbRefreshBtn.querySelector('.lb-refresh-icon');
-      if(icon) icon.style.animation = 'spin .6s linear infinite';
-      await renderLeaderboard();
-      if(icon) icon.style.animation = '';
-      lbRefreshBtn.disabled = false;
+    lbRefreshBtn.addEventListener('click', function(){
+      renderLeaderboard();
     });
   }
 
@@ -58,8 +75,6 @@
   var lbBackBtn = document.getElementById('lbBackBtn');
   if(lbBackBtn){
     lbBackBtn.addEventListener('click', function(){
-      /* BUG FIX: If user reached leaderboard without logging in,
-         redirect back to login instead of mode select */
       if(window.AppState && window.AppState.playerName){
         window.showScreen('mode');
       } else {
@@ -68,3 +83,4 @@
     });
   }
 })();
+

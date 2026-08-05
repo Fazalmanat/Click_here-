@@ -53,7 +53,15 @@ window.fbLoginOrRegister = async function(username, password){
 window.fbGetLeaderboard = async function(modeKey){
   var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
   try{
-    var res = await supabase.from('profiles').select('display_name,' + col).order(col, { ascending: false }).limit(10);
+    /* FIX: filter out rows where the score column is NULL so empty
+       accounts don’t appear. Also filter score > 0 explicitly. */
+    var res = await supabase
+      .from('profiles')
+      .select('display_name,' + col)
+      .not(col, 'is', null)
+      .gt(col, 0)
+      .order(col, { ascending: false })
+      .limit(10);
     if(res.error) throw res.error;
     return res.data.map(function(row){ return { name: row.display_name, score: row[col] }; });
   }catch(e){
@@ -68,13 +76,14 @@ window.fbSubmitScore = async function(modeKey, score, totalXP){
     var userRes = await supabase.auth.getUser();
     if(userRes.error || !userRes.data.user) return;
     var userId = userRes.data.user.id;
-    var current = await supabase.from('profiles').select(col).eq('id', userId).single();
+    var current = await supabase.from('profiles').select(col + ',total_xp').eq('id', userId).single();
     if(current.error) throw current.error;
     var patch = {};
-    if(score > (current.data[col] || 0)){
+    if(score > 0 && score > (current.data[col] || 0)){
       patch[col] = score;
     }
-    if(typeof totalXP === 'number'){
+    /* FIX: never let XP go backwards — only update if new value is higher */
+    if(typeof totalXP === 'number' && totalXP > (current.data.total_xp || 0)){
       patch.total_xp = totalXP;
     }
     if(Object.keys(patch).length > 0){

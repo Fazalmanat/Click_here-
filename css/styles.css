@@ -57,22 +57,73 @@ html,body{
   background:var(--disco-bg);
   border-radius:26px;
   transition:background .35s ease;
+  overflow:hidden;
 }
-#frame::before{
-  content:""; position:absolute; inset:0;
-  padding:var(--frame-gap);
-  border-radius:26px;
-  background:repeating-linear-gradient(90deg, var(--disco-text) 0 24px, transparent 24px 48px);
-  background-size:200% 100%;
-  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor;
-  mask-composite:exclude;
-  animation:chase 1.4s linear infinite;
-  opacity:.9;
+
+/* Old ::before chase removed — replaced with 4-runner border below */
+
+/* ---- Clockwise perimeter runner ---- */
+/* Total cycle = 4 segments. Each runner animates its own edge.
+   The TOTAL duration must be the same for all 4 so the "dot" loops perfectly.
+   We stagger each runner by 25% (1/4 of the period) using animation-delay.
+   Top  edge runs  left → right   (delay 0)
+   Right edge runs top  → bottom  (delay -1/4 period so it starts already mid-way)
+   Bottom edge runs right → left  (delay -2/4 period)
+   Left  edge runs bottom→ top   (delay -3/4 period) */
+.border-runner{
+  position:absolute;
   pointer-events:none;
-  transition:background .35s ease;
+  z-index:50;
+  background:var(--disco-text);
+  box-shadow:0 0 12px 4px var(--disco-text), 0 0 28px 8px var(--disco-text);
+  border-radius:99px;
+  transition:background .35s ease, box-shadow .35s ease;
 }
-@keyframes chase{ to{ background-position:-48px 0; } }
+.border-runner-top{
+  top:calc(var(--frame-gap)/2 - 3px);
+  left:0; right:0;
+  height:6px; width:40%;
+  animation:runTop 2.4s linear infinite;
+  animation-delay:0s;
+}
+.border-runner-right{
+  top:0; bottom:0;
+  right:calc(var(--frame-gap)/2 - 3px);
+  width:6px; height:40%;
+  animation:runRight 2.4s linear infinite;
+  animation-delay:-0.6s;
+}
+.border-runner-bottom{
+  bottom:calc(var(--frame-gap)/2 - 3px);
+  left:0; right:0;
+  height:6px; width:40%;
+  animation:runBottom 2.4s linear infinite;
+  animation-delay:-1.2s;
+}
+.border-runner-left{
+  top:0; bottom:0;
+  left:calc(var(--frame-gap)/2 - 3px);
+  width:6px; height:40%;
+  animation:runLeft 2.4s linear infinite;
+  animation-delay:-1.8s;
+}
+@keyframes runTop{
+  from{ left:-40%; right:auto; width:40%; }
+  to  { left:100%;  right:auto; width:40%; }
+}
+@keyframes runRight{
+  from{ top:-40%; bottom:auto; height:40%; }
+  to  { top:100%;  bottom:auto; height:40%; }
+}
+@keyframes runBottom{
+  from{ right:-40%; left:auto; width:40%; }
+  to  { right:100%;  left:auto; width:40%; }
+}
+@keyframes runLeft{
+  from{ bottom:-40%; top:auto; height:40%; }
+  to  { bottom:100%;  top:auto; height:40%; }
+}
+
 #stage{
   position:relative;
   height:100%; width:100%;
@@ -81,6 +132,19 @@ html,body{
   overflow:hidden;
   transition:background .35s ease;
   box-shadow:inset 0 0 0 2px rgba(255,255,255,.06), 0 0 60px rgba(0,0,0,.55);
+}
+/* Stage miss-click flash */
+#stage.stage-miss-flash::after{
+  content:'';
+  position:absolute; inset:0;
+  background:rgba(255,46,136,.18);
+  pointer-events:none;
+  border-radius:18px;
+  animation:missFlash .18s ease-out forwards;
+}
+@keyframes missFlash{
+  from{ opacity:1; }
+  to  { opacity:0; }
 }
 
 /* ============================================================
@@ -549,3 +613,11 @@ button{
    ============================================================ */
 .hidden{ display:none !important; }
 @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+/* Leaderboard refresh spinner — glowing spin */
+@keyframes lbSpin{
+  0%  { transform:rotate(0deg)   scale(1);    opacity:1; }
+  50% { transform:rotate(180deg) scale(1.25); opacity:.7; }
+  100%{ transform:rotate(360deg) scale(1);    opacity:1; }
+}
+.lb-refresh-icon{ display:inline-block; font-size:16px; line-height:1; transition:color .2s; }
+

@@ -32,6 +32,20 @@
     "Haha no. −2s"
   ];
 
+  /* ---- Stage miss (background click) taunt slogans ---- */
+  var MISS_SLOGANS = [
+    "Nothing there! −1s",
+    "Wrong spot! −1s 🚫",
+    "It's not THERE! −1s",
+    "Keep looking! −1s 🔍",
+    "Wild swing! −1s",
+    "Close… but no. −1s",
+    "Clicking air! −1s 💨",
+    "Over here! −1s ⬅️",
+    "Miss! −1s",
+    "Try using your eyes −1s 🙄"
+  ];
+
   /* Show a floating taunt near a given element */
   function showDecoyTaunt(nearEl){
     var rect = nearEl.getBoundingClientRect();
@@ -45,6 +59,18 @@
     popup.style.top  = Math.max(4, top) + 'px';
     stage.appendChild(popup);
     setTimeout(function(){ popup.remove(); }, 1400);
+  }
+
+  /* Show a floating miss taunt at an absolute stage-relative position */
+  function showMissTaunt(x, y){
+    var popup = document.createElement('div');
+    popup.className = 'decoy-taunt';
+    popup.textContent = MISS_SLOGANS[Math.floor(Math.random() * MISS_SLOGANS.length)];
+    var stageRect = stage.getBoundingClientRect();
+    popup.style.left = Math.max(4, Math.min(x, stageRect.width - 180)) + 'px';
+    popup.style.top  = Math.max(4, y - 28) + 'px';
+    stage.appendChild(popup);
+    setTimeout(function(){ popup.remove(); }, 1300);
   }
 
   /* ---- disco colour ---- */
@@ -243,5 +269,27 @@
 
   window.addEventListener('resize', function(){
     if(document.getElementById('screen-game').classList.contains('active')){ placeTarget(); }
+  });
+
+  /* ---- Stage background click penalty (-1s) ---- */
+  /* Any pointerdown on the stage itself (not target, not decoy, not HUD) triggers a penalty */
+  stage.addEventListener('pointerdown', function(e){
+    /* Only active during game screen */
+    if(!document.getElementById('screen-game').classList.contains('active')) return;
+    /* If the click landed on a meaningful interactive element, skip */
+    var el = e.target;
+    if(el === target || el.classList.contains('decoy') ||
+       el.closest('#hud') || el.closest('.decoy-taunt')) return;
+    /* Only penalise if game is running (timer mode, clock ticking) */
+    if(window.AppState.mode !== 'timer' || !timerId) return;
+    /* Apply -1s penalty */
+    timeLeft = Math.max(timeLeft - 1, 0.01);
+    updateTimerDisplay();
+    /* Show miss taunt at click position */
+    var stageRect = stage.getBoundingClientRect();
+    showMissTaunt(e.clientX - stageRect.left, e.clientY - stageRect.top);
+    /* Brief red screen-flash */
+    stage.classList.add('stage-miss-flash');
+    setTimeout(function(){ stage.classList.remove('stage-miss-flash'); }, 180);
   });
 })();
