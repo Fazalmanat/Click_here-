@@ -122,20 +122,21 @@ window.fbSubmitScore = async function(modeKey, score, totalXP){
       patch.display_name = window.AppState.playerName;
     }
 
-    /* 5. Direct UPDATE query (compatible with RLS UPDATE policy) */
-    var updateRes = await supabase.from('profiles').update(patch).eq('id', userId).select();
+    /* 5. Direct UPDATE query */
+    var updateRes = await supabase.from('profiles').update(patch).eq('id', userId);
+    
     if(updateRes.error){
       console.error('Supabase profile update error:', updateRes.error);
-    }
-
-    /* Fallback INSERT if profile row does not exist yet */
-    if(!updateRes.data || updateRes.data.length === 0){
+      
+      /* Fallback: if row doesn't exist yet, insert */
       patch.id = userId;
       patch.display_name = window.AppState.playerName || profile.display_name || 'Player';
-      var insertRes = await supabase.from('profiles').insert(patch).select();
+      var insertRes = await supabase.from('profiles').insert(patch);
       if(insertRes.error){
         console.error('Supabase profile insert fallback error:', insertRes.error);
       }
+    } else {
+      console.log('Successfully updated Supabase profile score:', modeKey, newBest);
     }
   }catch(e){
     console.error('Supabase score write failed', e);
