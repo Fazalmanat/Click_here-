@@ -55,39 +55,80 @@ html,body{
   position:fixed; inset:0;
   padding:var(--frame-gap);
   background:var(--disco-bg);
-  border-radius:26px;
+  border-radius:20px;
   transition:background .35s ease;
   overflow:hidden;
+  box-sizing:border-box;
 }
 
-/* Checkered Marquee Border — Gamefield color & Button color moving Counter-Clockwise */
-#frame::before{
-  content:""; position:absolute; inset:0;
-  padding:var(--frame-gap);
-  border-radius:26px;
-  background: repeating-conic-gradient(var(--disco-stage) 0% 25%, var(--disco-text) 0% 50%) 0 0 / 28px 28px;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: counterClockwiseCheckered 1.2s linear infinite;
-  opacity: .95;
-  pointer-events: none;
-  transition: background .35s ease;
+/* 4-Edge Counter-Clockwise Checkered Marquee Border (Gamefield color + Button color) */
+.marquee-edge{
+  position:absolute;
+  pointer-events:none;
+  z-index:2;
+  transition:background .35s ease;
 }
 
-@keyframes counterClockwiseCheckered{
+/* Top Edge: horizontal, moves Right -> Left */
+.edge-top{
+  top:0; left:0; right:0;
+  height:var(--frame-gap);
+  background: repeating-linear-gradient(90deg, var(--disco-stage) 0 16px, var(--disco-text) 16px 32px);
+  background-size: 64px 100%;
+  animation: marqueeTop 1.2s linear infinite;
+}
+@keyframes marqueeTop{
   0%   { background-position: 0 0; }
-  100% { background-position: -28px 28px; }
+  100% { background-position: -64px 0; }
+}
+
+/* Left Edge: vertical, moves Top -> Bottom */
+.edge-left{
+  top:0; bottom:0; left:0;
+  width:var(--frame-gap);
+  background: repeating-linear-gradient(0deg, var(--disco-stage) 0 16px, var(--disco-text) 16px 32px);
+  background-size: 100% 64px;
+  animation: marqueeLeft 1.2s linear infinite;
+}
+@keyframes marqueeLeft{
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 64px; }
+}
+
+/* Bottom Edge: horizontal, moves Left -> Right */
+.edge-bottom{
+  bottom:0; left:0; right:0;
+  height:var(--frame-gap);
+  background: repeating-linear-gradient(90deg, var(--disco-stage) 0 16px, var(--disco-text) 16px 32px);
+  background-size: 64px 100%;
+  animation: marqueeBottom 1.2s linear infinite;
+}
+@keyframes marqueeBottom{
+  0%   { background-position: 0 0; }
+  100% { background-position: 64px 0; }
+}
+
+/* Right Edge: vertical, moves Bottom -> Top */
+.edge-right{
+  top:0; bottom:0; right:0;
+  width:var(--frame-gap);
+  background: repeating-linear-gradient(0deg, var(--disco-stage) 0 16px, var(--disco-text) 16px 32px);
+  background-size: 100% 64px;
+  animation: marqueeRight 1.2s linear infinite;
+}
+@keyframes marqueeRight{
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 -64px; }
 }
 
 #stage{
   position:relative;
   height:100%; width:100%;
   background:var(--disco-stage);
-  border-radius:18px;
+  border-radius:12px;
   overflow:hidden;
   transition:background .35s ease;
-  box-shadow:inset 0 0 0 2px rgba(255,255,255,.06), 0 0 60px rgba(0,0,0,.55);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), 0 0 40px rgba(0,0,0,.5);
 }
 /* Stage miss-click flash */
 #stage.stage-miss-flash::after{
@@ -95,7 +136,7 @@ html,body{
   position:absolute; inset:0;
   background:rgba(255,46,136,.18);
   pointer-events:none;
-  border-radius:18px;
+  border-radius:12px;
   animation:missFlash .18s ease-out forwards;
 }
 @keyframes missFlash{

@@ -82,31 +82,41 @@ window.fbSubmitScore = async function(modeKey, score, totalXP){
       }
     }
 
-    var userRes = await supabase.auth.getUser();
-    if(userRes.error || !userRes.data.user) return;
-    var userId = userRes.data.user.id;
-    var current = await supabase.from('profiles').select(col + ',total_xp').eq('id', userId).single();
-    
-    if(current.error){
-      /* Upsert profile if missing */
-      var newProfile = { id: userId, display_name: window.AppState.playerName || 'Player' };
-      newProfile[col] = score;
-      if(typeof totalXP === 'number') newProfile.total_xp = totalXP;
-      await supabase.from('profiles').upsert(newProfile);
-      return;
+    var sessionRes = await supabase.auth.getSession();
+    var user = sessionRes.data && sessionRes.data.session && sessionRes.data.session.user;
+    if(!user){
+      var userRes = await supabase.auth.getUser();
+      user = userRes.data && userRes.data.user;
+    }
+    if(!user) return;
+
+    var userId = user.id;
+    var current = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+    var profile = (current && current.data) || {};
+
+    var patch = {
+      id: userId,
+      display_name: window.AppState.playerName || profile.display_name || 'Player',
+      updated_at: new Date().toISOString()
+    };
+
+    var currentBest = profile[col] || 0;
+    if(score > currentBest){
+      patch[col] = score;
+    } else {
+      patch[col] = currentBest;
     }
 
-    var patch = {};
-    if(score > 0 && score > (current.data[col] || 0)){
-      patch[col] = score;
-    }
-    /* Never let total XP decrease */
-    if(typeof totalXP === 'number' && totalXP > (current.data.total_xp || 0)){
+    var currentXP = profile.total_xp || 0;
+    if(typeof totalXP === 'number' && totalXP > currentXP){
       patch.total_xp = totalXP;
+    } else {
+      patch.total_xp = currentXP;
     }
-    if(Object.keys(patch).length > 0){
-      patch.updated_at = new Date().toISOString();
-      await supabase.from('profiles').update(patch).eq('id', userId);
+
+    var res = await supabase.from('profiles').upsert(patch).select();
+    if(res.error){
+      console.error('Supabase profile upsert error:', res.error);
     }
   }catch(e){
     console.error('Supabase score write failed', e);

@@ -132,6 +132,11 @@
 
   window.PageHandlers['leaderboard'] = {
     onShow: function(){
+      if(window.AppState && window.AppState.mode){
+        activeMode = window.AppState.mode;
+        if(tabTimer) tabTimer.classList.toggle('active', activeMode === 'timer');
+        if(tabZen)   tabZen.classList.toggle('active', activeMode === 'zen');
+      }
       if(lbAutoRefreshId){ clearInterval(lbAutoRefreshId); }
       renderLeaderboard();
       lbAutoRefreshId = setInterval(renderLeaderboard, 10000);
