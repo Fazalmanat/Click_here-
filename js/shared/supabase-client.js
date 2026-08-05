@@ -73,12 +73,16 @@ window.fbGetLeaderboard = async function(modeKey){
 window.fbSubmitScore = async function(modeKey, score, totalXP){
   var col = modeKey === 'timer' ? 'timer_best' : 'zen_best';
   try{
-    /* 1. Local backup storage */
+    /* 1. Save totalXP and highscore to Local Storage immediately */
     if(window.AppState && window.AppState.playerName){
-      var localKey = 'clickhere_' + modeKey + '_' + window.AppState.playerName;
+      var name = window.AppState.playerName;
+      var localKey = 'clickhere_' + modeKey + '_' + name;
       var curLocal = parseInt(localStorage.getItem(localKey), 10) || 0;
       if(score > curLocal){
         try{ localStorage.setItem(localKey, score); }catch(e){}
+      }
+      if(typeof totalXP === 'number'){
+        try{ localStorage.setItem('clickhere_xp_' + name, totalXP); }catch(e){}
       }
     }
 
@@ -103,40 +107,53 @@ window.fbSubmitScore = async function(modeKey, score, totalXP){
     var currentBest = profile[col] || 0;
     var newBest = Math.max(score, currentBest);
 
-    var currentXP = profile.total_xp || 0;
-    var newXP = (typeof totalXP === 'number') ? Math.max(totalXP, currentXP) : currentXP;
-
     if(window.AppState){
       if(!window.AppState.highScores) window.AppState.highScores = { timer: 0, zen: 0 };
       window.AppState.highScores[modeKey] = newBest;
-      window.AppState.totalXP = newXP;
+      if(typeof totalXP === 'number'){
+        window.AppState.totalXP = Math.max(totalXP, window.AppState.totalXP || 0);
+      }
     }
 
-    /* 4. Prepare update payload */
+    /* 4. Prepare update payload (with total_xp if provided) */
     var patch = {
       updated_at: new Date().toISOString()
     };
     patch[col] = newBest;
-    patch.total_xp = newXP;
     if(window.AppState && window.AppState.playerName){
       patch.display_name = window.AppState.playerName;
     }
+    if(typeof totalXP === 'number'){
+      patch.total_xp = totalXP;
+    }
 
-    /* 5. Direct UPDATE query */
+    /* 5. Direct UPDATE query (Auto-detects total_xp column existence) */
     var updateRes = await supabase.from('profiles').update(patch).eq('id', userId);
     
     if(updateRes.error){
-      console.error('Supabase profile update error:', updateRes.error);
+      /* If total_xp column is missing in Supabase schema (PGRST204), retry without total_xp */
+      var msg = (updateRes.error.message || '');
+      if(/total_xp/i.test(msg) || updateRes.error.code === 'PGRST204'){
+        delete patch.total_xp;
+        updateRes = await supabase.from('profiles').update(patch).eq('id', userId);
+      }
       
-      /* Fallback: if row doesn't exist yet, insert */
-      patch.id = userId;
-      patch.display_name = window.AppState.playerName || profile.display_name || 'Player';
-      var insertRes = await supabase.from('profiles').insert(patch);
-      if(insertRes.error){
-        console.error('Supabase profile insert fallback error:', insertRes.error);
+      if(updateRes.error){
+        console.error('Supabase profile update error:', updateRes.error);
+        
+        /* Fallback: if row doesn't exist yet, insert */
+        patch.id = userId;
+        patch.display_name = window.AppState.playerName || profile.display_name || 'Player';
+        var insertRes = await supabase.from('profiles').insert(patch);
+        if(insertRes.error && /total_xp/i.test(insertRes.error.message || '')){
+          delete patch.total_xp;
+          insertRes = await supabase.from('profiles').insert(patch);
+        }
+      } else {
+        console.log('Successfully updated Supabase profile score:', modeKey, newBest);
       }
     } else {
-      console.log('Successfully updated Supabase profile score:', modeKey, newBest);
+      console.log('Successfully updated Supabase profile score & total XP:', modeKey, newBest);
     }
   }catch(e){
     console.error('Supabase score write failed', e);
